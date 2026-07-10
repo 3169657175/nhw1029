@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>功能特性 | Antigravity 2.0 中文汉化与网络优化补丁</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <canvas id="grid-bg"></canvas>
+
+  <!-- 统一 Navbar -->
+  <header class="navbar">
+    <div class="nav-container">
+      <div class="logo-area">
+        <span class="neon-indicator active"></span>
+        <span class="logo-title">ANTIGRAVITY<span class="accent-dot">.ZH</span></span>
+      </div>
+      
+      <nav class="nav-menu">
+        <a href="index.html" class="nav-link">主页</a>
+        <a href="features.html" class="nav-link active">功能特性</a>
+        <a href="install.html" class="nav-link">安装与装配</a>
+        <a href="faq.html" class="nav-link">常见问题</a>
+        <a href="feedback.html" class="nav-link">极客反馈</a>
+      </nav>
+      <button class="nav-toggle" id="nav-toggle-btn" aria-label="切换菜单">
+        <span class="bar"></span>
+        <span class="bar"></span>
+      </button>
+
+      <div class="nav-actions">
+        <span class="badge">v1.2.3 STABLE</span>
+        <a href="https://github.com/3169657175/Antigravity-Chinese" target="_blank" class="github-icon-btn">
+          <svg viewBox="0 0 16 16" width="18" height="18"><path fill="currentColor" fill-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg>
+        </a>
+        
+        <!-- 全局登录态入口 -->
+        <div id="nav-user-area" class="nav-user-zone">
+          <button type="button" id="nav-login-trigger" class="nav-auth-trigger-btn">🔑 登录/注册</button>
+          <div id="nav-user-menu" class="nav-user-dropdown" style="display: none;">
+            <button type="button" id="nav-username-btn" class="nav-username-display">👤 <span id="nav-user-name-text"></span></button>
+            <div class="dropdown-content">
+              <a href="#" id="nav-logout-action">退出登录</a>
+            </div>
+          </div>
+        </div>
+
+        <a href="install.html#downloads" class="nav-download-btn">免费获取</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    
+    <!-- 功能特性首屏 -->
+    <section class="page-header">
+      <h1 class="page-title">匠心雕琢的四大功能</h1>
+      <p class="page-subtitle">我们深入客户端的最底层，对汉化表现和网络路由进行了多轮深度调优。</p>
+    </section>
+
+    <!-- Bento Grid 便当盒特性细节 -->
+    <section class="bento-section">
+      <div class="bento-grid">
+        
+        <!-- 卡片一：免 TUN 网络增强 -->
+        <div id="proxy-detail" class="bento-card large flex-row">
+          <div class="card-text">
+            <span class="bento-badge blue">无感网络接管</span>
+            <h3>免 TUN 模式代理优化</h3>
+            <p>因为 Electron 的主进程在下载和初始化时默认绕过了系统代理设置，导致国内用户即使开了 VPN 也会遇到更新卡顿甚至无法启动的问题。我们的免 TUN 拦截引擎会在进程启动时自动接管它的 HTTP/HTTPS 通信，精准将 AI 相关的请求导向您的本地代理服务（如 7890 端口），其余日常连接仍走直连，稳定与速度兼得。</p>
+          </div>
+          <div class="card-visual">
+            <div class="network-topology-anim">
+              <div class="node">客户端</div>
+              <div class="wire-pulse"></div>
+              <div class="node middle" style="border-color:var(--neon-blue);color:var(--neon-blue);">7890 本地代理</div>
+              <div class="wire-pulse second"></div>
+              <div class="node target">官方大模型</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 卡片二：动态正则汉化 -->
+        <div id="zh-detail" class="bento-card small">
+          <span class="bento-badge pink">防碎裂汉化</span>
+          <h3>动态拼装节点正则替换</h3>
+          <p>很多英文提示是由数据动态拼装渲染的（例如 `intelligent-hubble` 项目名和 `0 active conversations` 的数字），浏览器在处理加粗部分时会把长句碎裂成多个 DOM 节点。传统的静态翻译会导致网页呈现“中英大杂烩”的刺眼效果。我们采用**碎裂子串匹配防御系统**，将常见句子的前缀、后缀和动态捕获组剥离，确保不管是项目列表、项目删除确认还是每周限额，均显示 100% 完美的连贯中文。</p>
+          <div class="translation-demo-box">
+            <div class="demo-line-before">Permanently delete intelligent-hubble including 1 active conversation...</div>
+            <div class="demo-arrow">⬇️</div>
+            <div class="demo-line-after">永久删除「intelligent-hubble」，包含 1 个活跃对话。</div>
+          </div>
+        </div>
+
+        <!-- 卡片三：智能对齐 -->
+        <div class="bento-card small">
+          <span class="bento-badge orange">精确对齐</span>
+          <h3>智能模型对齐过滤器</h3>
+          <p>解决原版插件的一大历史遗留漏洞。老版本只要侧边栏历史标题里含有敏感词（比如会话名字叫 `claude`），大模型额度就会被强行误导卡死在该模型额度上。补丁新增父级链追溯系统，自动剔除侧边栏以及下拉弹窗里的冗余词干扰，实现 100% 绝对精确的额度对齐显示。</p>
+        </div>
+
+        <!-- 卡片四：自愈静默 -->
+        <div class="bento-card small">
+          <span class="bento-badge green">自动保护</span>
+          <h3>50ms 物理启动自愈</h3>
+          <p>客户端在检测到新更新并自动覆盖资源包后，汉化常会随之丢失失效。补丁程序会在软件启动的一瞬间运行静默校验，一旦发现汉化文件被覆盖，将以 50ms 的速度自动重新寻路装配，完全无需用户进行重装或干预，省心省力。</p>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- IDE Diff 差异对比器 -->
+    <section class="ide-section">
+      <div class="section-title-wrap">
+        <h2>底层代码优化对比</h2>
+        <p>支持多标签自由切换，以最直观的 Diff 形式展示补丁对客户端代码的精密优化与汉化实现。</p>
+      </div>
+
+      <div class="ide-window">
+        <div class="ide-sidebar">
+          <div class="sidebar-header">文件列表</div>
+          <div class="sidebar-files">
+            <button class="file-item active" data-target="diff-translation">
+              <span class="file-icon">📄</span> translate.js (汉化正则)
+            </button>
+            <button class="file-item" data-target="diff-network">
+              <span class="file-icon">📄</span> network.js (免 TUN 拦截)
+            </button>
+            <button class="file-item" data-target="diff-selector">
+              <span class="file-icon">📄</span> selector.js (过滤器对齐)
+            </button>
+          </div>
+        </div>
+
+        <div class="ide-editor">
+          <div id="diff-translation" class="editor-pane active">
+            <div class="editor-header">
+              <span class="tab-title">translate.js - Diff Compare</span>
+            </div>
+            <pre class="code-view"><code><span class="line-del">-  // 官方原版只显示英文</span>
+<span class="line-del">-  const title = "Permanently delete intelligent-hubble including 1 active conversation";</span>
+<span class="line-add">+  // 补丁版：防 React 碎裂子串替换</span>
+<span class="line-add">+  const substringReplacements = [</span>
+<span class="line-add">+    { search: 'Permanently delete', replace: '永久删除' },</span>
+<span class="line-add">+    { search: 'including', replace: '，包含' },</span>
+<span class="line-add">+    { search: 'active conversation', replace: '个活跃对话' }</span>
+<span class="line-add">+  ];</span></code></pre>
+          </div>
+
+          <div id="diff-network" class="editor-pane">
+            <div class="editor-header">
+              <span class="tab-title">network.js - Diff Compare</span>
+            </div>
+            <pre class="code-view"><code><span class="line-del">-  // 官方默认：直连 github-production-release.s3.amazonaws.com (国内慢至3分钟)</span>
+<span class="line-del">-  electron.ipcRenderer.invoke('patch:trigger-update', downloadUrl);</span>
+<span class="line-add">+  // 补丁版：自动接入国内极速 CDN 加速通道 (1秒秒下)</span>
+<span class="line-add">+  const acceleratedUrl = downloadUrl.replace('https://github.com/', 'https://ghproxy.net/https://github.com/');</span>
+<span class="line-add">+  electron.ipcRenderer.invoke('patch:trigger-update', acceleratedUrl);</span></code></pre>
+          </div>
+
+          <div id="diff-selector" class="editor-pane">
+            <div class="editor-header">
+              <span class="tab-title">selector.js - Diff Compare</span>
+            </div>
+            <pre class="code-view"><code><span class="line-del">-  // 官方原版：遍历所有标签，导致侧边栏历史有 'claude' 时额度卡片永远被强行锁死在 claude</span>
+<span class="line-del">-  const isGemini = text.includes('Gemini');</span>
+<span class="line-add">+  // 补丁版：向上追溯父级链，智能排除侧边栏与下拉菜单选项的交叉干扰</span>
+<span class="line-add">+  if (parent.className.includes('sidebar') || parent.className.includes('dropdown')) {</span>
+<span class="line-add">+    continue; // 智能拦截并跳过干扰源，确保 100% 模型对齐</span>
+<span class="line-add">+  }</span></code></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="footer">
+    <p>© 2026 Antigravity-Chinese. 基于 MIT 许可开源授权。</p>
+  </footer>
+
+  <!-- 全局登录注册模态弹窗 -->
+  <div id="global-auth-modal" class="auth-modal">
+    <div class="auth-modal-content">
+      <span class="auth-modal-close" id="auth-modal-close-btn">&times;</span>
+      <div class="auth-tabs" style="margin-bottom: 20px;">
+        <button type="button" id="modal-tab-login" class="auth-tab-btn active">极客登录</button>
+        <button type="button" id="modal-tab-register" class="auth-tab-btn">账号注册</button>
+      </div>
+      <!-- 登录表单 -->
+      <form id="modal-login-form" class="auth-form active">
+        <input type="text" id="modal-login-user" placeholder="请输入账号" required class="auth-modal-input">
+        <input type="password" id="modal-login-pass" placeholder="请输入密码" required class="auth-modal-input">
+        <button type="submit" class="run-btn modal-submit-btn">立即登录</button>
+      </form>
+      <!-- 注册表单 -->
+      <form id="modal-register-form" class="auth-form">
+        <input type="text" id="modal-reg-user" placeholder="创建账号 (3~20字)" required class="auth-modal-input">
+        <input type="password" id="modal-reg-pass" placeholder="设置密码 (最少6位)" required class="auth-modal-input">
+        <button type="submit" class="run-btn modal-submit-btn">立即注册</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="main.js?v=2.0.1"></script>
+</body>
+</html>

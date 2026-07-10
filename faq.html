@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>答疑中心 FAQ | Antigravity 2.0 中文汉化与网络优化补丁</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <canvas id="grid-bg"></canvas>
+
+  <!-- 统一 Navbar -->
+  <header class="navbar">
+    <div class="nav-container">
+      <div class="logo-area">
+        <span class="neon-indicator active"></span>
+        <span class="logo-title">ANTIGRAVITY<span class="accent-dot">.ZH</span></span>
+      </div>
+      
+      <nav class="nav-menu">
+        <a href="index.html" class="nav-link">主页</a>
+        <a href="features.html" class="nav-link">功能特性</a>
+        <a href="install.html" class="nav-link">安装与装配</a>
+        <a href="faq.html" class="nav-link active">常见问题</a>
+        <a href="feedback.html" class="nav-link">极客反馈</a>
+      </nav>
+      <button class="nav-toggle" id="nav-toggle-btn" aria-label="切换菜单">
+        <span class="bar"></span>
+        <span class="bar"></span>
+      </button>
+
+      <div class="nav-actions">
+        <span class="badge">v1.2.3 STABLE</span>
+        <a href="https://github.com/3169657175/Antigravity-Chinese" target="_blank" class="github-icon-btn">
+          <svg viewBox="0 0 16 16" width="18" height="18"><path fill="currentColor" fill-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg>
+        </a>
+        
+        <!-- 全局登录态入口 -->
+        <div id="nav-user-area" class="nav-user-zone">
+          <button type="button" id="nav-login-trigger" class="nav-auth-trigger-btn">🔑 登录/注册</button>
+          <div id="nav-user-menu" class="nav-user-dropdown" style="display: none;">
+            <button type="button" id="nav-username-btn" class="nav-username-display">👤 <span id="nav-user-name-text"></span></button>
+            <div class="dropdown-content">
+              <a href="#" id="nav-logout-action">退出登录</a>
+            </div>
+          </div>
+        </div>
+
+        <a href="install.html#downloads" class="nav-download-btn">免费获取</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    
+    <!-- 答疑中心内容 -->
+    <section class="faq-section">
+      <h1 class="page-title">常见问题答疑</h1>
+      <p class="page-subtitle">解答您关于使用安全、自动更新以及底层网络逻辑的一切疑问。</p>
+      
+      <div id="security" class="faq-accordion">
+        <div class="faq-item">
+          <div class="faq-trigger">
+            <span>使用这个汉化补丁，我的账号会有被封禁的风险吗？</span>
+            <svg class="faq-icon" viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+          </div>
+          <div class="faq-content">
+            <p><strong>100% 绝对安全。</strong> 补丁完全在本地运行，以物理覆盖客户端 app.asar 存档的方式工作。我们不使用、也不经过任何第三方的中转服务器，您的所有 API 数据请求依然直接加密发往 Google 官方，因此完全不存在任何第三方监听密钥或导致账号被官方判为风控 the 危险。</p>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-trigger">
+            <span>官方客户端一旦自动更新，我需要重新手动装配补丁吗？</span>
+            <svg class="faq-icon" viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+          </div>
+          <div class="faq-content">
+            <p><strong>完全不需要。</strong> 补丁中内置了静默检测与物理自愈机制。当客户端通过后台静默升级导致补丁被官方原版覆盖重置时，只要您再次启动软件，补丁就会在 50ms 内瞬间自动重新打包写入，免除您反复安装配置的烦恼。</p>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-trigger">
+            <span>为什么我开了代理梯子，客户端后台下载更新还是卡住不动？</span>
+            <svg class="faq-icon" viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+          </div>
+          <div class="faq-content">
+            <p>这是因为 Electron 的 Node.js 主进程在执行网络下载时，默认并不会读取系统虚拟网卡或代理软件（VPN）的端口代理配置。我们在最新的 v1.2.3 补丁里注入了国内高速 CDN（ghproxy）极速下载通道，现在下载 3.7MB 的包在 1~2 秒内即可秒下秒更新，再无卡顿。</p>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-trigger">
+            <span>卸载汉化补丁麻烦吗？会损坏客户端吗？</span>
+            <svg class="faq-icon" viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+          </div>
+          <div class="faq-content">
+            <p><strong>极其简单。</strong> 在您解压缩的补丁目录下，双击运行 **`一键还原官方原版.bat`** 即可。补丁安装程序在首次装配时已自动为您做好了官方 app.asar 的纯净物理备份，双击还原只需 50ms，瞬间恢复为 100% 官方原版状态，不伤及任何客户端文件。</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+  </main>
+
+  <!-- 全局登录注册模态弹窗 -->
+  <div id="global-auth-modal" class="auth-modal">
+    <div class="auth-modal-content">
+      <span class="auth-modal-close" id="auth-modal-close-btn">&times;</span>
+      <div class="auth-tabs" style="margin-bottom: 20px;">
+        <button type="button" id="modal-tab-login" class="auth-tab-btn active">极客登录</button>
+        <button type="button" id="modal-tab-register" class="auth-tab-btn">账号注册</button>
+      </div>
+      <!-- 登录表单 -->
+      <form id="modal-login-form" class="auth-form active">
+        <input type="text" id="modal-login-user" placeholder="请输入账号" required class="auth-modal-input">
+        <input type="password" id="modal-login-pass" placeholder="请输入密码" required class="auth-modal-input">
+        <button type="submit" class="run-btn modal-submit-btn">立即登录</button>
+      </form>
+      <!-- 注册表单 -->
+      <form id="modal-register-form" class="auth-form">
+        <input type="text" id="modal-reg-user" placeholder="创建账号 (3~20字)" required class="auth-modal-input">
+        <input type="password" id="modal-reg-pass" placeholder="设置密码 (最少6位)" required class="auth-modal-input">
+        <button type="submit" class="run-btn modal-submit-btn">立即注册</button>
+      </form>
+    </div>
+  </div>
+
+
+
+  <footer class="footer">
+    <p>© 2026 Antigravity-Chinese. 基于 MIT 许可开源授权。</p>
+  </footer>
+
+  <script src="main.js?v=2.0.1"></script>
+</body>
+</html>

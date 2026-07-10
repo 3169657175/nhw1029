@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Antigravity 2.0 中文汉化与网络优化补丁 | 官方原生极致体验</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <canvas id="grid-bg"></canvas>
+
+  <header class="navbar">
+    <div class="nav-container">
+      <div class="logo-area">
+        <span class="neon-indicator active"></span>
+        <span class="logo-title">ANTIGRAVITY<span class="accent-dot">.ZH</span></span>
+      </div>
+      <nav class="nav-menu">
+        <a href="index.html" class="nav-link active">主页</a>
+        <a href="features.html" class="nav-link">功能特性</a>
+        <a href="install.html" class="nav-link">安装与装配</a>
+        <a href="faq.html" class="nav-link">常见问题</a>
+        <a href="feedback.html" class="nav-link">极客反馈</a>
+      </nav>
+      <button class="nav-toggle" id="nav-toggle-btn" aria-label="切换菜单">
+        <span class="bar"></span>
+        <span class="bar"></span>
+      </button>
+      <div class="nav-actions">
+        <span class="badge">v1.2.3 STABLE</span>
+        <a href="https://github.com/3169657175/Antigravity-Chinese" target="_blank" class="github-icon-btn">
+          <svg viewBox="0 0 16 16" width="18" height="18"><path fill="currentColor" fill-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg>
+        </a>
+        
+        <!-- 全局登录态入口 -->
+        <div id="nav-user-area" class="nav-user-zone">
+          <button type="button" id="nav-login-trigger" class="nav-auth-trigger-btn">🔑 登录/注册</button>
+          <div id="nav-user-menu" class="nav-user-dropdown" style="display: none;">
+            <button type="button" id="nav-username-btn" class="nav-username-display">👤 <span id="nav-user-name-text"></span></button>
+            <div class="dropdown-content">
+              <a href="#" id="nav-logout-action">退出登录</a>
+            </div>
+          </div>
+        </div>
+
+        <a href="install.html#downloads" class="nav-download-btn">免费获取</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <section class="hero-center">
+      <div class="glow-container">
+        <span class="release-glow-tag">v1.2.3 PRODUCT RELEASE</span>
+      </div>
+      <h1 class="hero-huge-title">让 AI 编程，回归中文</h1>
+      <p class="hero-main-subtitle">
+        国内首款针对 Google Antigravity 2.0 客户端的极致汉化与网络优化补丁。一键汉化 99% 全界面，智能接管本地代理免 TUN 极速直连官方大模型，保障 100% 账号安全。
+      </p>
+      <div class="hero-buttons">
+        <a href="install.html#downloads" class="btn-glow-primary">立即免费获取</a>
+        <a href="features.html" class="btn-outline-secondary">了解功能细节</a>
+      </div>
+
+      <div class="real-screenshot-wrapper animate-fade-in-up">
+        <div class="screenshot-titlebar">
+          <div class="mock-dots">
+            <span class="dot red"></span>
+            <span class="dot yellow"></span>
+            <span class="dot green"></span>
+          </div>
+          <div class="screenshot-title-text" id="screenshot-title-text">Antigravity 2.0 — 菜单与界面完全中文化</div>
+          <div class="mock-tag">汉化版 v1.2.3</div>
+        </div>
+        <img
+          id="real-screenshot-img"
+          class="real-screenshot-img"
+          src="https://github.com/user-attachments/assets/3758b0dd-8e85-47a4-bda4-0d921fa5b89f"
+          alt="Antigravity 2.0 菜单与设置项完全中文化截图"
+          loading="lazy"
+        />
+        <div class="screenshot-nav">
+          <span class="sc-dot active"
+            data-src="https://github.com/user-attachments/assets/3758b0dd-8e85-47a4-bda4-0d921fa5b89f"
+            data-label="全界面汉化"
+            data-title="Antigravity 2.0 — 菜单与界面完全中文化"></span>
+          <span class="sc-dot"
+            data-src="https://github.com/user-attachments/assets/24b8632f-1640-488e-b430-16027b4db58b"
+            data-label="左下角额度看板"
+            data-title="Antigravity 2.0 — 左下角常驻智能额度看板"></span>
+          <span class="sc-dot"
+            data-src="https://github.com/user-attachments/assets/670b81e0-ec00-4d00-9adc-0a5a1f255ebe"
+            data-label="登录中文化"
+            data-title="Antigravity 2.0 — 登录界面中文化与一键快捷登录"></span>
+        </div>
+        <div id="screenshot-label" class="screenshot-caption">全界面汉化</div>
+      </div>
+    </section>
+
+    <section class="value-proposition-section">
+      <div class="value-title-wrap">
+        <h2>只为您最在乎的体验而生</h2>
+        <p>我们深知国内使用 AI 编程助手的烦恼，在这里所有障碍已被一扫而空。</p>
+      </div>
+      <div class="value-grid">
+        <div class="value-card">
+          <div class="v-icon">&#127775;</div>
+          <h4>全界面流畅中文化</h4>
+          <p class="v-desc">告别看不懂的英文设置和报错。无论是深度菜单、额度重置天数，还是危险区域的二次删除确认，均已过严谨校对，呈现原生中文界面。</p>
+          <a href="features.html#zh-detail" class="v-link">查看正则汉化技术 &#10145;&#65039;</a>
+        </div>
+        <div class="value-card">
+          <div class="v-icon">&#128640;</div>
+          <h4>国内免 TUN 直连官方</h4>
+          <p class="v-desc">不需要为整个系统开启代理。补丁自动适配您的本地代理端口，仅接管客户端本身通信。支持原汁原味的官方账号和额度，极速稳定。</p>
+          <a href="features.html#proxy-detail" class="v-link">了解免 TUN 运行机制 &#10145;&#65039;</a>
+        </div>
+        <div class="value-card">
+          <div class="v-icon">&#128737;&#65039;</div>
+          <h4>100% 原生安全保障</h4>
+          <p class="v-desc">数据不经过任何第三方服务器中转。所有通信直接加密发送到 Google 官方服务器，保护您的代码隐私与大模型账号防风控安全。</p>
+          <a href="faq.html#security" class="v-link">查看安全答疑 &#10145;&#65039;</a>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="footer">
+    <p>&#169; 2026 Antigravity-Chinese. 基于 MIT 许可开源授权。</p>
+    <p class="muted">声明：本补丁为开源汉化优化补丁，数据交互完全直接发往 Google 官方，不涉及任何中间网络缓存，请放心使用。</p>
+  </footer>
+
+  <!-- 全局登录注册模态弹窗 -->
+  <div id="global-auth-modal" class="auth-modal">
+    <div class="auth-modal-content">
+      <span class="auth-modal-close" id="auth-modal-close-btn">&times;</span>
+      <div class="auth-tabs" style="margin-bottom: 20px;">
+        <button type="button" id="modal-tab-login" class="auth-tab-btn active">极客登录</button>
+        <button type="button" id="modal-tab-register" class="auth-tab-btn">账号注册</button>
+      </div>
+      <!-- 登录表单 -->
+      <form id="modal-login-form" class="auth-form active">
+        <input type="text" id="modal-login-user" placeholder="请输入账号" required class="auth-modal-input">
+        <input type="password" id="modal-login-pass" placeholder="请输入密码" required class="auth-modal-input">
+        <button type="submit" class="run-btn modal-submit-btn">立即登录</button>
+      </form>
+      <!-- 注册表单 -->
+      <form id="modal-register-form" class="auth-form">
+        <input type="text" id="modal-reg-user" placeholder="创建账号 (3~20字)" required class="auth-modal-input">
+        <input type="password" id="modal-reg-pass" placeholder="设置密码 (最少6位)" required class="auth-modal-input">
+        <button type="submit" class="run-btn modal-submit-btn">立即注册</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="main.js?v=2.0.1"></script>
+</body>
+</html>
