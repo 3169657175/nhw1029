@@ -18,6 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
   safeInit(initMobileNavbar);
   safeInit(initGlobalAuth); // 启用全站身份验证引擎
   safeInit(initAIAssistant); // 启用 AI 客服助手系统
+  safeInit(initTurnstileVerification); // 启用 Turnstile 显式渲染模块
 });
 
 function safeInit(initFn) {
@@ -613,6 +614,7 @@ function initGlobalAuth() {
     authModal.style.display = 'flex';
     setTimeout(() => {
       authModal.classList.add('active');
+      if (window.renderTurnstileIfVisible) window.renderTurnstileIfVisible();
     }, 10);
   };
 
@@ -680,11 +682,11 @@ function initGlobalAuth() {
         alert('🎉 注册成功！请直接在登录选项卡进行登录。');
         document.getElementById('modal-reg-user').value = '';
         document.getElementById('modal-reg-pass').value = '';
-        if (window.turnstile) window.turnstile.reset(modalRegisterForm.querySelector('.cf-turnstile'));
+        if (window.turnstile) window.turnstile.reset(modalRegisterForm.querySelector('.turnstile-container'));
         modalTabLogin.click(); // 切回登录
       } catch (err) {
         alert(err.message);
-        if (window.turnstile) window.turnstile.reset(modalRegisterForm.querySelector('.cf-turnstile'));
+        if (window.turnstile) window.turnstile.reset(modalRegisterForm.querySelector('.turnstile-container'));
       }
     });
   }
@@ -714,12 +716,12 @@ function initGlobalAuth() {
         document.getElementById('modal-login-user').value = '';
         document.getElementById('modal-login-pass').value = '';
  
-        if (window.turnstile) window.turnstile.reset(modalLoginForm.querySelector('.cf-turnstile'));
+        if (window.turnstile) window.turnstile.reset(modalLoginForm.querySelector('.turnstile-container'));
         closeAuthModal();
         updateAuthUI();
       } catch (err) {
         alert(err.message);
-        if (window.turnstile) window.turnstile.reset(modalLoginForm.querySelector('.cf-turnstile'));
+        if (window.turnstile) window.turnstile.reset(modalLoginForm.querySelector('.turnstile-container'));
       }
     });
   }
@@ -881,6 +883,7 @@ function initGlobalAuth() {
 
         // 阶段二：保存留言
         submitBtn.textContent = '正在写入反馈...';
+        const turnstileToken = feedbackForm.querySelector('[name="cf-turnstile-response"]')?.value || '';
         
         const feedbackRes = await fetch('/api/feedback', {
           method: 'POST',
@@ -890,7 +893,8 @@ function initGlobalAuth() {
           },
           body: JSON.stringify({ 
             content,
-            image_url: uploadedImageUrl 
+            image_url: uploadedImageUrl,
+            turnstileToken
           })
         });
 
@@ -905,11 +909,13 @@ function initGlobalAuth() {
 
         contentInput.value = '';
         clearImageSelection();
+        if (window.turnstile) window.turnstile.reset(feedbackForm.querySelector('.turnstile-container'));
         await loadFeedbacks();
 
       } catch (err) {
         alert(`反馈提交失败: ${err.message}`);
         checkSessionExpiry(err.message);
+        if (window.turnstile) window.turnstile.reset(feedbackForm.querySelector('.turnstile-container'));
       } finally {
         submitBtn.disabled = false;
         submitBtn.textContent = '提交反馈';
@@ -1154,3 +1160,23 @@ function initAIAssistant() {
     }
   }
 }
+
+// 7.8 显式 Turnstile 验证码渲染模块
+function initTurnstileVerification() {
+  window.renderTurnstileIfVisible = function() {
+    if (window.turnstile) {
+      document.querySelectorAll('.turnstile-container').forEach(el => {
+        if (el.innerHTML.trim() === '') {
+          turnstile.render(el, {
+            sitekey: '0x4AAAAAADzndfqwWCd0wHc0',
+            theme: 'dark'
+          });
+        }
+      });
+    }
+  };
+  
+  // 初次尝试加载（如果当前页面有可见的发帖容器）
+  window.renderTurnstileIfVisible();
+}
+
