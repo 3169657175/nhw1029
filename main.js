@@ -1163,20 +1163,33 @@ function initAIAssistant() {
 
 // 7.8 显式 Turnstile 验证码渲染模块
 function initTurnstileVerification() {
-  window.renderTurnstileIfVisible = function() {
+  window.renderTurnstileIfVisible = function(retryCount = 0) {
     if (window.turnstile) {
       document.querySelectorAll('.turnstile-container').forEach(el => {
         if (el.innerHTML.trim() === '') {
-          turnstile.render(el, {
-            sitekey: '0x4AAAAAADzndfqwWCd0wHc0',
-            theme: 'dark'
-          });
+          try {
+            turnstile.render(el, {
+              sitekey: '0x4AAAAAADzndfqwWCd0wHc0',
+              theme: 'dark'
+            });
+          } catch (err) {
+            console.warn('[Turnstile] Render failed:', err);
+          }
         }
       });
+    } else if (retryCount < 10) {
+      setTimeout(() => {
+        window.renderTurnstileIfVisible(retryCount + 1);
+      }, 200);
     }
   };
+
+  // 全局的回调方法，当 JS 异步下载完后立刻唤醒渲染
+  window.onloadTurnstileCallback = function() {
+    window.renderTurnstileIfVisible();
+  };
   
-  // 初次尝试加载（如果当前页面有可见的发帖容器）
+  // 初次尝试加载
   window.renderTurnstileIfVisible();
 }
 
