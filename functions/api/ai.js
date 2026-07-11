@@ -65,13 +65,26 @@ export async function onRequestPost(context) {
 回复要求：保持在 150 字以内，排版精美多用列表或 Emoji。`;
 
       try {
-        const result = await env.AI.run("@cf/meta/llama-3.1-8b-instruct", {
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: query }
-          ],
-          max_tokens: 250
-        });
+        let result;
+        try {
+          result = await env.AI.run("@cf/meta/llama-3.1-8b-instruct", {
+            messages: [
+              { role: "system", content: systemPrompt },
+              { role: "user", content: query }
+            ],
+            max_tokens: 250
+          });
+        } catch (primaryErr) {
+          console.warn("LLaMA 3.1 失败，尝试 Qwen 备用模型:", primaryErr);
+          context.primaryErrorMsg = primaryErr.message;
+          result = await env.AI.run("@cf/qwen/qwen1.5-7b-chat", {
+            messages: [
+              { role: "system", content: systemPrompt },
+              { role: "user", content: query }
+            ],
+            max_tokens: 250
+          });
+        }
 
         if (result && result.response) {
           return new Response(JSON.stringify({
@@ -83,12 +96,17 @@ export async function onRequestPost(context) {
         }
       } catch (aiErr) {
         console.error("Workers AI 运行出错:", aiErr);
+        context.aiErrorDetails = `Workers AI 运行出错: LLaMA3.1报错[${context.primaryErrorMsg || '无'}] + Qwen报错[${aiErr.message}]`;
       }
     }
 
     // 3. Fallback 兜底（如果 AI 绑定不可用或调用失败）
-    const fallbackAnswer = "🤖 极客助理已收到您的提问！\n目前管理员尚未在 Cloudflare 后台为本 Functions 绑定 `Workers AI` 模块（您只需在 Cloudflare Pages 的设置 -> 绑定中，添加一个名为 `AI` 的 Workers AI 绑定即可免费激活大模型智能对话）。\n\n💡 **常见解答提示**：\n您可以输入“安装”、“卸载”、“免tun”、“封号”等关键词来获取我们的即时离线答疑！";
+    let fallbackAnswer = "🤖 极客助理已收到您的提问！\n目前管理员尚未在 Cloudflare 后台为本 Functions 绑定 `Workers AI` 模块（您只需在 Cloudflare Pages 的设置 -> 绑定中，添加一个名为 `AI` 的 Workers AI 绑定即可免费激活大模型智能对话）。\n\n💡 **常见解答提示**：\n您可以输入“安装”、“卸载”、“免tun”、“封号”等关键词来获取我们的即时离线答疑！";
     
+    if (context.aiErrorDetails) {
+      fallbackAnswer += `\n\n⚙️ **诊断信息**：\n${context.aiErrorDetails}`;
+    }
+
     return new Response(JSON.stringify({
       response: fallbackAnswer,
       source: "fallback"
