@@ -1227,16 +1227,25 @@ function initTurnstileVerification() {
   // 初次尝试加载
   window.renderTurnstileIfVisible();
 
-  // 3.5秒超时检测：如果未加载成功，自动启动国内自愈备用防线
+  // 1.5秒超时检测：如果未加载成功，自动启动国内自愈备用防线
+  // 同时主动终止 Turnstile 脚本后台下载，防止拖累手机带宽
   setTimeout(() => {
     if (!window.turnstileLoaded) {
       window.turnstileBypassed = true;
-      console.log('[Turnstile] Network timeout, activating geek fallback verify.');
+      console.log('[Turnstile] Network timeout (1.5s), activating geek fallback verify.');
+
+      // 主动移除 Turnstile <script> 标签，终止后台无意义下载
+      const tsScript = document.querySelector('script[src*="challenges.cloudflare.com"]');
+      if (tsScript) {
+        tsScript.remove();
+        console.log('[Turnstile] Script tag removed to free mobile bandwidth.');
+      }
+
       document.querySelectorAll('.turnstile-container').forEach(el => {
         window.renderGeekFallback(el);
       });
     }
-  }, 3500);
+  }, 1500);
 }
 
 // 提取并校验人机验证 Token
