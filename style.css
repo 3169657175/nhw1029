@@ -2377,5 +2377,195 @@ body::after {
   box-shadow: 0 10px 30px rgba(59, 130, 246, 0.04);
   background: rgba(255, 255, 255, 0.03) !important;
 }
-/ /   c a c h e - b u s t e r :   2 0 2 6 - 0 7 - 1 0 T 1 7 : 5 1  
- 
+// cache-buster: 2026-07-10T17:51
+
+/* ==========================================================================
+   AI 智能助手悬浮窗样式 (Global AI Assistant Float Window)
+   ========================================================================== */
+.ai-assistant-wrapper {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-family: var(--font-display);
+}
+
+/* 浮动触发气泡 */
+.ai-assistant-trigger {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(13, 13, 17, 0.85);
+  border: 1px solid rgba(99, 102, 241, 0.35);
+  color: #fff;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 0 15px rgba(99, 102, 241, 0.3);
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  backdrop-filter: blur(10px);
+}
+
+.ai-assistant-trigger:hover {
+  transform: translateY(-4px) scale(1.05);
+  border-color: var(--neon-pink);
+  box-shadow: 0 0 20px rgba(217, 70, 239, 0.5);
+}
+
+/* 聊天面板 */
+.ai-chat-panel {
+  width: 330px;
+  height: 440px;
+  background: rgba(13, 13, 17, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  margin-bottom: 12px;
+  opacity: 0;
+  transform: translateY(20px) scale(0.95);
+  pointer-events: none;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transform-origin: right bottom;
+}
+
+.ai-chat-panel.active {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+/* 聊天头部 */
+.ai-chat-header {
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.ai-chat-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 8px #10b981;
+}
+
+.ai-chat-close {
+  color: var(--text-muted);
+  font-size: 16px;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.ai-chat-close:hover {
+  color: #fff;
+}
+
+/* 聊天记录区 */
+.ai-chat-body {
+  flex-grow: 1;
+  padding: 16px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  /* 隐藏滚动条 */
+  scrollbar-width: none;
+}
+
+.ai-chat-body::-webkit-scrollbar {
+  display: none;
+}
+
+/* 对话气泡 */
+.chat-bubble {
+  max-width: 80%;
+  padding: 8px 12px;
+  font-size: 11.5px;
+  line-height: 1.5;
+  word-break: break-all;
+  white-space: pre-wrap;
+}
+
+.chat-bubble.user {
+  background: rgba(99, 102, 241, 0.15);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  color: #fff;
+  border-radius: 12px 12px 0 12px;
+  align-self: flex-end;
+}
+
+.chat-bubble.ai {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  border-radius: 12px 12px 12px 0;
+  align-self: flex-start;
+}
+
+/* 输入区域 */
+.ai-chat-footer {
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.2);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  gap: 8px;
+}
+
+.ai-chat-input {
+  flex-grow: 1;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 8px 12px;
+  color: #fff;
+  font-size: 11px;
+  outline: none;
+  font-family: var(--font-display);
+  transition: var(--transition-smooth);
+}
+
+.ai-chat-input:focus {
+  border-color: var(--neon-blue);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.ai-chat-send-btn {
+  background: var(--neon-blue);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 0 12px;
+  font-size: 11px;
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-weight: 500;
+  transition: var(--transition-smooth);
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
+}
+
+.ai-chat-send-btn:hover {
+  background: #2563eb;
+  box-shadow: 0 0 15px rgba(37, 99, 235, 0.5);
+}
