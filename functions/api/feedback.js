@@ -1,4 +1,4 @@
-import { authenticateRequest, verifyTurnstile } from "./auth/_utils.js";
+import { authenticateRequest } from "./auth/_utils.js";
 
 // ==========================================
 // 1. GET /api/feedback (联表读取留言及全部子回复)
@@ -94,16 +94,7 @@ export async function onRequestPost(context) {
   }
 
   try {
-    const { content, image_url, turnstileToken } = await request.json();
-
-    // Turnstile 人机安全校验
-    const isHuman = await verifyTurnstile(turnstileToken, env, request.headers.get("CF-Connecting-IP"));
-    if (!isHuman) {
-      return new Response(JSON.stringify({ error: "安全验证失败，请刷新页面重试" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" }
-      });
-    }
+    const { content, image_url } = await request.json();
 
     if (!content || !content.trim()) {
       return new Response(JSON.stringify({ error: "反馈内容不能为空" }), {

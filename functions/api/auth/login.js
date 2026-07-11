@@ -1,4 +1,4 @@
-import { hashPassword, generateJWT, verifyTurnstile } from "./_utils.js";
+import { hashPassword, generateJWT } from "./_utils.js";
 
 export async function onRequestPost(context) {
   const { request, env } = context;
@@ -12,16 +12,7 @@ export async function onRequestPost(context) {
   }
 
   try {
-    const { username, password, turnstileToken } = await request.json();
-
-    // Turnstile 人机安全校验
-    const isHuman = await verifyTurnstile(turnstileToken, env, request.headers.get("CF-Connecting-IP"));
-    if (!isHuman) {
-      return new Response(JSON.stringify({ error: "安全验证失败，请刷新页面重试" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" }
-      });
-    }
+    const { username, password } = await request.json();
 
     if (!username || !password || !username.trim() || !password.trim()) {
       return new Response(JSON.stringify({ error: "账号和密码不能为空" }), {

@@ -10,14 +10,13 @@
 // ==========================================================================
 
 document.addEventListener('DOMContentLoaded', () => {
-  safeInit(initMobileNavbar);
   safeInit(initGridBackground);
   safeInit(initTerminalSimulator);
   safeInit(initIDETabs);
   safeInit(initFAQAccordion);
   safeInit(initScreenshotSwitcher);
+  safeInit(initMobileNavbar);
   safeInit(initGlobalAuth); // 启用全站身份验证引擎
-  safeInit(initAIAssistant); // 启用 AI 客服助手系统
 });
 
 function safeInit(initFn) {
@@ -613,7 +612,6 @@ function initGlobalAuth() {
     authModal.style.display = 'flex';
     setTimeout(() => {
       authModal.classList.add('active');
-      if (window.renderTurnstileIfVisible) window.renderTurnstileIfVisible();
     }, 10);
   };
 
@@ -667,7 +665,7 @@ function initGlobalAuth() {
       e.preventDefault();
       const username = document.getElementById('modal-reg-user').value.trim();
       const password = document.getElementById('modal-reg-pass').value.trim();
- 
+
       try {
         const res = await fetch('/api/auth/register', {
           method: 'POST',
@@ -676,7 +674,7 @@ function initGlobalAuth() {
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || '注册失败');
- 
+
         alert('🎉 注册成功！请直接在登录选项卡进行登录。');
         document.getElementById('modal-reg-user').value = '';
         document.getElementById('modal-reg-pass').value = '';
@@ -693,7 +691,7 @@ function initGlobalAuth() {
       e.preventDefault();
       const username = document.getElementById('modal-login-user').value.trim();
       const password = document.getElementById('modal-login-pass').value.trim();
- 
+
       try {
         const res = await fetch('/api/auth/login', {
           method: 'POST',
@@ -702,15 +700,15 @@ function initGlobalAuth() {
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || '登录失败');
- 
+
         // 保存全局登录会话
         localStorage.setItem('auth_token', data.token);
         localStorage.setItem('auth_user', data.username);
         localStorage.setItem('auth_role', data.role);
- 
+
         document.getElementById('modal-login-user').value = '';
         document.getElementById('modal-login-pass').value = '';
- 
+
         closeAuthModal();
         updateAuthUI();
       } catch (err) {
@@ -885,7 +883,7 @@ function initGlobalAuth() {
           },
           body: JSON.stringify({ 
             content,
-            image_url: uploadedImageUrl
+            image_url: uploadedImageUrl 
           })
         });
 
@@ -987,166 +985,3 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 window.viewLargeImage = viewLargeImage;
-
-// ==========================================================================
-   // 极客汉化 AI 客服悬浮对话交互系统 (Typewriter & History Persistence)
-// ==========================================================================
-function initAIAssistant() {
-  const triggerBtn = document.getElementById('ai-assistant-trigger-btn');
-  const chatPanel = document.getElementById('ai-chat-panel');
-  const closeBtn = document.getElementById('ai-chat-close-btn');
-  const chatBody = document.getElementById('ai-chat-body');
-  const chatInput = document.getElementById('ai-chat-input');
-  const sendBtn = document.getElementById('ai-chat-send-btn');
-
-  if (!triggerBtn || !chatPanel || !chatBody) return;
-
-  let isResponding = false; // 防抖锁
-
-  // 1. 从 sessionStorage 中恢复聊天记录（确保穿梭于不同 html 时历史不丢）
-  const savedHistory = sessionStorage.getItem('ai_chat_history');
-  if (savedHistory) {
-    try {
-      const history = JSON.parse(savedHistory);
-      chatBody.innerHTML = '';
-      history.forEach(item => {
-        appendBubbleDirectly(item.role, item.content);
-      });
-    } catch (e) {
-      console.error("恢复历史聊天出错:", e);
-    }
-  }
-
-  // 2. 交互控制：点击气泡按钮打开/收回面板
-  triggerBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    const isActive = chatPanel.classList.toggle('active');
-    if (isActive) {
-      setTimeout(() => chatInput.focus(), 150);
-      scrollToBottom();
-    }
-  });
-
-  // 3. 点击关闭按钮收起面板
-  closeBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    chatPanel.classList.remove('active');
-  });
-
-  // 4. 点击面板外部自动收起面板
-  document.addEventListener('click', (e) => {
-    if (!chatPanel.contains(e.target) && e.target !== triggerBtn) {
-      chatPanel.classList.remove('active');
-    }
-  });
-
-  // 5. 消息发送事件
-  sendBtn.addEventListener('click', handleUserSend);
-  chatInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleUserSend();
-    }
-  });
-
-  async function handleUserSend() {
-    if (isResponding) return;
-    const text = chatInput.value.trim();
-    if (!text) return;
-
-    // 清空输入框并加锁
-    chatInput.value = '';
-    isResponding = true;
-    toggleInputState(true);
-
-    // 渲染用户气泡
-    appendBubbleDirectly('user', text);
-    saveToHistory('user', text);
-    scrollToBottom();
-
-    // 渲染 AI 正在打字/载入中占位气泡
-    const loadingBubble = appendBubbleDirectly('ai', '🤖 正在匹配云端大模型...');
-    scrollToBottom();
-
-    try {
-      const res = await fetch('/api/ai?t=' + Date.now(), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text })
-      });
-
-      const data = await res.json();
-      
-      // 移除正在载入文字
-      loadingBubble.textContent = '';
-      
-      if (res.ok && data.response) {
-        // 使用打字机特效优雅输出 AI 的回答
-        typeWriterEffect(loadingBubble, data.response, () => {
-          saveToHistory('ai', data.response);
-          isResponding = false;
-          toggleInputState(false);
-          chatInput.focus();
-        });
-      } else {
-        throw new Error(data.error || '获取 AI 回复失败');
-      }
-
-    } catch (err) {
-      loadingBubble.textContent = `⚠️ 连接失败，请稍后重试（${err.message}）`;
-      isResponding = false;
-      toggleInputState(false);
-    }
-  }
-
-  // 辅助函数：逐字打字机特效
-  function typeWriterEffect(element, text, callback) {
-    let index = 0;
-    function nextChar() {
-      if (index < text.length) {
-        element.textContent += text.charAt(index);
-        index++;
-        scrollToBottom();
-        setTimeout(nextChar, 12); // 12ms 的流畅节奏
-      } else {
-        if (callback) callback();
-      }
-    }
-    nextChar();
-  }
-
-  // 辅助函数：快速渲染气泡
-  function appendBubbleDirectly(role, text) {
-    const bubble = document.createElement('div');
-    bubble.className = `chat-bubble ${role}`;
-    bubble.textContent = text;
-    chatBody.appendChild(bubble);
-    return bubble;
-  }
-
-  // 辅助函数：保存聊天记录到 sessionStorage
-  function saveToHistory(role, content) {
-    const history = JSON.parse(sessionStorage.getItem('ai_chat_history') || '[]');
-    history.push({ role, content });
-    sessionStorage.setItem('ai_chat_history', JSON.stringify(history));
-  }
-
-  // 辅助函数：滚动到底部
-  function scrollToBottom() {
-    chatBody.scrollTop = chatBody.scrollHeight;
-  }
-
-  // 辅助函数：切换输入禁用状态
-  function toggleInputState(disabled) {
-    chatInput.disabled = disabled;
-    sendBtn.disabled = disabled;
-    if (!disabled) {
-      chatInput.style.opacity = '1';
-      sendBtn.style.opacity = '1';
-    } else {
-      chatInput.style.opacity = '0.7';
-      sendBtn.style.opacity = '0.7';
-    }
-  }
-}}
-

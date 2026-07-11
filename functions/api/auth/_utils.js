@@ -107,9 +107,3 @@ export async function authenticateRequest(request, secret = DEFAULT_SECRET) {
   const token = authHeader.split(' ')[1];
   return await verifyJWT(token, secret);
 }
-
-// 6. 验证 Turnstile 人机验证 Token (已废弃并直接放行)
-export async function verifyTurnstile(token, env, remoteIp) {
-  return true;
-}
-
