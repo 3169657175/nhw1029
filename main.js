@@ -668,9 +668,9 @@ function initGlobalAuth() {
       e.preventDefault();
       const username = document.getElementById('modal-reg-user').value.trim();
       const password = document.getElementById('modal-reg-pass').value.trim();
-      const turnstileToken = modalRegisterForm.querySelector('[name="cf-turnstile-response"]')?.value || '';
  
       try {
+        const turnstileToken = getTurnstileToken(modalRegisterForm);
         const res = await fetch('/api/auth/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -682,11 +682,11 @@ function initGlobalAuth() {
         alert('🎉 注册成功！请直接在登录选项卡进行登录。');
         document.getElementById('modal-reg-user').value = '';
         document.getElementById('modal-reg-pass').value = '';
-        if (window.turnstile) window.turnstile.reset(modalRegisterForm.querySelector('.turnstile-container'));
+        resetTurnstile(modalRegisterForm);
         modalTabLogin.click(); // 切回登录
       } catch (err) {
         alert(err.message);
-        if (window.turnstile) window.turnstile.reset(modalRegisterForm.querySelector('.turnstile-container'));
+        resetTurnstile(modalRegisterForm);
       }
     });
   }
@@ -697,9 +697,9 @@ function initGlobalAuth() {
       e.preventDefault();
       const username = document.getElementById('modal-login-user').value.trim();
       const password = document.getElementById('modal-login-pass').value.trim();
-      const turnstileToken = modalLoginForm.querySelector('[name="cf-turnstile-response"]')?.value || '';
  
       try {
+        const turnstileToken = getTurnstileToken(modalLoginForm);
         const res = await fetch('/api/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -716,12 +716,12 @@ function initGlobalAuth() {
         document.getElementById('modal-login-user').value = '';
         document.getElementById('modal-login-pass').value = '';
  
-        if (window.turnstile) window.turnstile.reset(modalLoginForm.querySelector('.turnstile-container'));
+        resetTurnstile(modalLoginForm);
         closeAuthModal();
         updateAuthUI();
       } catch (err) {
         alert(err.message);
-        if (window.turnstile) window.turnstile.reset(modalLoginForm.querySelector('.turnstile-container'));
+        resetTurnstile(modalLoginForm);
       }
     });
   }
@@ -883,7 +883,7 @@ function initGlobalAuth() {
 
         // 阶段二：保存留言
         submitBtn.textContent = '正在写入反馈...';
-        const turnstileToken = feedbackForm.querySelector('[name="cf-turnstile-response"]')?.value || '';
+        const turnstileToken = getTurnstileToken(feedbackForm);
         
         const feedbackRes = await fetch('/api/feedback', {
           method: 'POST',
@@ -909,13 +909,13 @@ function initGlobalAuth() {
 
         contentInput.value = '';
         clearImageSelection();
-        if (window.turnstile) window.turnstile.reset(feedbackForm.querySelector('.turnstile-container'));
+        resetTurnstile(feedbackForm);
         await loadFeedbacks();
 
       } catch (err) {
         alert(`反馈提交失败: ${err.message}`);
         checkSessionExpiry(err.message);
-        if (window.turnstile) window.turnstile.reset(feedbackForm.querySelector('.turnstile-container'));
+        resetTurnstile(feedbackForm);
       } finally {
         submitBtn.disabled = false;
         submitBtn.textContent = '提交反馈';
@@ -1161,11 +1161,45 @@ function initAIAssistant() {
   }
 }
 
-// 7.8 显式 Turnstile 验证码渲染模块
+// 7.8 显式 Turnstile 验证码渲染模块 + 柔性国内自愈降级
 function initTurnstileVerification() {
+  window.turnstileLoaded = false;
+  window.turnstileBypassed = false;
+
+  // 生成 4 位随机极客指纹字符
+  window.generateGeekCode = function() {
+    const chars = 'abcdefhkmnprstuvwx3456789';
+    let code = '';
+    for (let i = 0; i < 4; i++) {
+      code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return code;
+  };
+
+  // 渲染极客自愈输入框
+  window.renderGeekFallback = function(el) {
+    if (el.querySelector('.geek-fallback-verify')) return; // 避免重复渲染
+    const code = window.generateGeekCode();
+    const encoded = btoa(code); // Base64 简单自加密
+    
+    el.innerHTML = `
+      <div class="geek-fallback-verify" style="margin: 10px 0; padding: 12px; background: rgba(0, 255, 204, 0.04); border: 1px solid rgba(0, 255, 204, 0.2); border-radius: 6px; text-align: left;">
+        <div style="font-size: 13px; color: #00ffcc; font-weight: bold; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+          <span>⚙️ 极客安全自愈网关已激活 (国内免代理模式)</span>
+        </div>
+        <div style="font-size: 12px; color: #bbb; margin-bottom: 8px;">
+          请在下方输入极客身份校验码 <strong class="geek-target-code" style="color: #ff6600; background: rgba(255,102,0,0.15); padding: 2px 6px; border-radius: 4px; font-family: monospace;" data-ans="${encoded}">${code}</strong> 以释放提交锁：
+        </div>
+        <input type="text" class="geek-verify-input" placeholder="输入右侧校验码" style="width: 100%; padding: 8px; background: #111; border: 1px solid #333; color: #fff; border-radius: 4px; font-family: monospace; font-size: 13px; outline: none; transition: border 0.3s;" onfocus="this.style.borderColor='#00ffcc'" onblur="this.style.borderColor='#333'">
+      </div>
+    `;
+  };
+
   window.renderTurnstileIfVisible = function(retryCount = 0) {
     if (window.turnstile) {
+      window.turnstileLoaded = true;
       document.querySelectorAll('.turnstile-container').forEach(el => {
+        if (el.querySelector('.geek-fallback-verify')) return;
         if (el.innerHTML.trim() === '') {
           try {
             turnstile.render(el, {
@@ -1177,7 +1211,7 @@ function initTurnstileVerification() {
           }
         }
       });
-    } else if (retryCount < 10) {
+    } else if (retryCount < 15) {
       setTimeout(() => {
         window.renderTurnstileIfVisible(retryCount + 1);
       }, 200);
@@ -1186,10 +1220,55 @@ function initTurnstileVerification() {
 
   // 全局的回调方法，当 JS 异步下载完后立刻唤醒渲染
   window.onloadTurnstileCallback = function() {
+    window.turnstileLoaded = true;
     window.renderTurnstileIfVisible();
   };
   
   // 初次尝试加载
   window.renderTurnstileIfVisible();
+
+  // 3.5秒超时检测：如果未加载成功，自动启动国内自愈备用防线
+  setTimeout(() => {
+    if (!window.turnstileLoaded) {
+      window.turnstileBypassed = true;
+      console.log('[Turnstile] Network timeout, activating geek fallback verify.');
+      document.querySelectorAll('.turnstile-container').forEach(el => {
+        window.renderGeekFallback(el);
+      });
+    }
+  }, 3500);
+}
+
+// 提取并校验人机验证 Token
+function getTurnstileToken(form) {
+  if (window.turnstileBypassed) {
+    const geekInput = form.querySelector('.geek-verify-input');
+    const geekCodeEl = form.querySelector('.geek-target-code');
+    if (!geekInput || !geekCodeEl) return '';
+    const inputVal = geekInput.value.trim().toLowerCase();
+    const encodedAns = geekCodeEl.getAttribute('data-ans');
+    const correctAns = atob(encodedAns).toLowerCase();
+
+    if (!inputVal) {
+      throw new Error('请输入极客身份校验码');
+    }
+    if (inputVal !== correctAns) {
+      throw new Error('校验码输入错误，请重新输入');
+    }
+    return `geek-bypass:${inputVal}:${encodedAns}`;
+  }
+  return form.querySelector('[name="cf-turnstile-response"]')?.value || '';
+}
+
+// 重置人机验证状态
+function resetTurnstile(form) {
+  const el = form.querySelector('.turnstile-container');
+  if (!el) return;
+  if (window.turnstileBypassed) {
+    el.innerHTML = '';
+    window.renderGeekFallback(el);
+  } else if (window.turnstile) {
+    window.turnstile.reset(el);
+  }
 }
 
