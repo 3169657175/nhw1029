@@ -666,22 +666,25 @@ function initGlobalAuth() {
       e.preventDefault();
       const username = document.getElementById('modal-reg-user').value.trim();
       const password = document.getElementById('modal-reg-pass').value.trim();
-
+      const turnstileToken = modalRegisterForm.querySelector('[name="cf-turnstile-response"]')?.value || '';
+ 
       try {
         const res = await fetch('/api/auth/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, password })
+          body: JSON.stringify({ username, password, turnstileToken })
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || '注册失败');
-
+ 
         alert('🎉 注册成功！请直接在登录选项卡进行登录。');
         document.getElementById('modal-reg-user').value = '';
         document.getElementById('modal-reg-pass').value = '';
+        if (window.turnstile) window.turnstile.reset(modalRegisterForm.querySelector('.cf-turnstile'));
         modalTabLogin.click(); // 切回登录
       } catch (err) {
         alert(err.message);
+        if (window.turnstile) window.turnstile.reset(modalRegisterForm.querySelector('.cf-turnstile'));
       }
     });
   }
@@ -692,28 +695,31 @@ function initGlobalAuth() {
       e.preventDefault();
       const username = document.getElementById('modal-login-user').value.trim();
       const password = document.getElementById('modal-login-pass').value.trim();
-
+      const turnstileToken = modalLoginForm.querySelector('[name="cf-turnstile-response"]')?.value || '';
+ 
       try {
         const res = await fetch('/api/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, password })
+          body: JSON.stringify({ username, password, turnstileToken })
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || '登录失败');
-
+ 
         // 保存全局登录会话
         localStorage.setItem('auth_token', data.token);
         localStorage.setItem('auth_user', data.username);
         localStorage.setItem('auth_role', data.role);
-
+ 
         document.getElementById('modal-login-user').value = '';
         document.getElementById('modal-login-pass').value = '';
-
+ 
+        if (window.turnstile) window.turnstile.reset(modalLoginForm.querySelector('.cf-turnstile'));
         closeAuthModal();
         updateAuthUI();
       } catch (err) {
         alert(err.message);
+        if (window.turnstile) window.turnstile.reset(modalLoginForm.querySelector('.cf-turnstile'));
       }
     });
   }

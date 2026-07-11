@@ -6,6 +6,8 @@
   <title>极客反馈交流 | Antigravity 2.0 中文汉化与网络优化补丁</title>
   <link rel="stylesheet" href="style.css?v=2.0.2">
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Cloudflare Turnstile Verification SDK -->
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 </head>
 <body>
   <!-- 互动背景网格 -->
@@ -92,6 +94,7 @@
             </div>
           </div>
 
+          <div class="cf-turnstile" data-sitekey="0x4AAAAAADzndfqwWCd0wHc0" data-theme="dark" style="margin-bottom: 12px; display: flex; justify-content: flex-start;"></div>
           <button type="submit" id="fb-submit-btn" class="run-btn feedback-submit-button">提交反馈</button>
         </form>
       </div>
@@ -126,12 +129,14 @@
       <form id="modal-login-form" class="auth-form active">
         <input type="text" id="modal-login-user" placeholder="请输入账号" required class="auth-modal-input">
         <input type="password" id="modal-login-pass" placeholder="请输入密码" required class="auth-modal-input">
+        <div class="cf-turnstile" data-sitekey="0x4AAAAAADzndfqwWCd0wHc0" data-theme="dark" style="margin-bottom: 12px; display: flex; justify-content: center;"></div>
         <button type="submit" class="run-btn modal-submit-btn">立即登录</button>
       </form>
       <!-- 注册表单 -->
       <form id="modal-register-form" class="auth-form">
         <input type="text" id="modal-reg-user" placeholder="创建账号 (3~20字)" required class="auth-modal-input">
         <input type="password" id="modal-reg-pass" placeholder="设置密码 (最少6位)" required class="auth-modal-input">
+        <div class="cf-turnstile" data-sitekey="0x4AAAAAADzndfqwWCd0wHc0" data-theme="dark" style="margin-bottom: 12px; display: flex; justify-content: center;"></div>
         <button type="submit" class="run-btn modal-submit-btn">立即注册</button>
       </form>
     </div>
