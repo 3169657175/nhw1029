@@ -69,7 +69,7 @@ export async function onRequestPost(context) {
       try {
         let result;
         try {
-          result = await env.AI.run("@cf/meta/llama-3.1-8b-instruct", {
+          result = await env.AI.run("@cf/meta/llama-3.2-3b-instruct", {
             messages: [
               { role: "system", content: systemPrompt },
               { role: "user", content: query }
@@ -77,9 +77,9 @@ export async function onRequestPost(context) {
             max_tokens: 250
           });
         } catch (primaryErr) {
-          console.warn("LLaMA 3.1 失败，尝试 Qwen 备用模型:", primaryErr);
+          console.warn("LLaMA 3.2 失败，尝试 Qwen3 备用模型:", primaryErr);
           primaryErrorMsg = primaryErr.message;
-          result = await env.AI.run("@cf/qwen/qwen1.5-7b-chat", {
+          result = await env.AI.run("@cf/qwen/qwen3-30b-a3b-fp8", {
             messages: [
               { role: "system", content: systemPrompt },
               { role: "user", content: query }
