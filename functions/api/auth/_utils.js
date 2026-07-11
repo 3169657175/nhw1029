@@ -108,55 +108,8 @@ export async function authenticateRequest(request, secret = DEFAULT_SECRET) {
   return await verifyJWT(token, secret);
 }
 
-// 6. 验证 Turnstile 人机验证 Token (自愈机制：如果 env 里没设置 TURNSTILE_SECRET_KEY，则自动通过)
+// 6. 验证 Turnstile 人机验证 Token (已废弃并直接放行)
 export async function verifyTurnstile(token, env, remoteIp) {
-  const secretKey = env.TURNSTILE_SECRET_KEY;
-  
-  // 自愈机制：如果环境密钥未配置，视为暂未开启验证，直接放行
-  if (!secretKey) {
-    return true;
-  }
-  
-  if (!token) {
-    return false;
-  }
-
-  // 国内网络超时免代理自愈放行逻辑
-  if (token.startsWith("geek-bypass:")) {
-    try {
-      const parts = token.split(":");
-      if (parts.length === 3) {
-        const inputVal = parts[1].trim().toLowerCase();
-        const encodedAns = parts[2].trim();
-        const correctAns = atob(encodedAns).trim().toLowerCase();
-        return inputVal === correctAns && inputVal.length === 4;
-      }
-    } catch (e) {
-      console.error("Geek bypass token parsing error:", e);
-      return false;
-    }
-    return false;
-  }
-
-  try {
-    const formData = new FormData();
-    formData.append("secret", secretKey);
-    formData.append("response", token);
-    if (remoteIp) {
-      formData.append("remoteip", remoteIp);
-    }
-
-    const res = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
-      method: "POST",
-      body: formData
-    });
-
-    const data = await res.json();
-    return !!data.success;
-  } catch (e) {
-    // 若请求验证接口失败，为避免阻碍正常用户，自动放行（Fail-Safe 策略）
-    console.error("Turnstile verification connection failed:", e);
-    return true;
-  }
+  return true;
 }
 
