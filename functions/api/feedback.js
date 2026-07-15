@@ -4,7 +4,7 @@ import { authenticateRequest } from "./auth/_utils.js";
 // 1. GET /api/feedback (联表读取留言及全部子回复)
 // ==========================================
 export async function onRequestGet(context) {
-  const { env } = context;
+  const { request, env } = context;
   const db = env.DB || env.db;
 
   if (!db) {
@@ -14,8 +14,17 @@ export async function onRequestGet(context) {
     });
   }
 
+  // 解密获取当前的登录用户用户名 (如果没登录则留空)
+  let currentUsername = "";
   try {
-    // 自愈数据库列和回复表结构
+    const user = await authenticateRequest(request);
+    if (user) {
+      currentUsername = user.username;
+    }
+  } catch (e) {}
+
+  try {
+    // 1. D1 数据库架构自愈
     try {
       await db.prepare("ALTER TABLE feedbacks ADD COLUMN image_url TEXT").run();
     } catch (e) {}
@@ -30,10 +39,28 @@ export async function onRequestGet(context) {
       )
     `).run();
 
-    // 1. 读取最新的 30 条留言
-    const { results: feedbacks } = await db.prepare(
-      "SELECT id, username, content, image_url, created_at FROM feedbacks ORDER BY id DESC LIMIT 30"
-    ).all();
+    await db.prepare(`
+      CREATE TABLE IF NOT EXISTS feedback_likes (
+        username TEXT NOT NULL,
+        feedback_id INTEGER NOT NULL,
+        PRIMARY KEY (username, feedback_id)
+      )
+    `).run();
+
+    // 2. 联合查询反馈主帖子：高优先级按点赞数量降序排序，点赞数量一样按创建时间降序排序
+    const { results: feedbacks } = await db.prepare(`
+      SELECT 
+        f.id, 
+        f.username, 
+        f.content, 
+        f.image_url, 
+        f.created_at,
+        (SELECT COUNT(*) FROM feedback_likes WHERE feedback_id = f.id) as likes_count,
+        (SELECT COUNT(*) FROM feedback_likes WHERE feedback_id = f.id AND username = ?) as has_liked
+      FROM feedbacks f
+      ORDER BY likes_count DESC, f.created_at DESC
+      LIMIT 50
+    `).bind(currentUsername).all();
 
     if (feedbacks.length === 0) {
       return new Response(JSON.stringify([]), {
@@ -41,13 +68,13 @@ export async function onRequestGet(context) {
       });
     }
 
-    // 2. 查出这些留言下所有的二级回复
+    // 3. 联合检索二级回复
     const feedbackIds = feedbacks.map(f => f.id).join(',');
     const { results: allReplies } = await db.prepare(
       `SELECT id, feedback_id, username, content, created_at FROM replies WHERE feedback_id IN (${feedbackIds}) ORDER BY id ASC`
     ).all();
 
-    // 3. 将回复分流嵌套进对应的留言中，生成嵌套树
+    // 4. 将子回复嵌套拼装
     const mergedList = feedbacks.map(fb => {
       return {
         ...fb,
