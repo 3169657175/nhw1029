@@ -26,6 +26,18 @@ export async function onRequestGet(context) {
   try {
     // 1. D1 数据库架构自愈
     try {
+      await db.prepare(`
+        CREATE TABLE IF NOT EXISTS feedbacks (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          username TEXT NOT NULL,
+          content TEXT NOT NULL,
+          image_url TEXT,
+          created_at INTEGER NOT NULL
+        )
+      `).run();
+    } catch (e) {}
+
+    try {
       await db.prepare("ALTER TABLE feedbacks ADD COLUMN image_url TEXT").run();
     } catch (e) {}
 
@@ -44,6 +56,14 @@ export async function onRequestGet(context) {
         username TEXT NOT NULL,
         feedback_id INTEGER NOT NULL,
         PRIMARY KEY (username, feedback_id)
+      )
+    `).run();
+
+    await db.prepare(`
+      CREATE TABLE IF NOT EXISTS reply_likes (
+        username TEXT NOT NULL,
+        reply_id INTEGER NOT NULL,
+        PRIMARY KEY (username, reply_id)
       )
     `).run();
 
@@ -68,11 +88,21 @@ export async function onRequestGet(context) {
       });
     }
 
-    // 3. 联合检索二级回复
+    // 3. 联合检索二级回复：支持回复点赞与高赞置顶排序 (点赞降序，时间升序)
     const feedbackIds = feedbacks.map(f => f.id).join(',');
-    const { results: allReplies } = await db.prepare(
-      `SELECT id, feedback_id, username, content, created_at FROM replies WHERE feedback_id IN (${feedbackIds}) ORDER BY id ASC`
-    ).all();
+    const { results: allReplies } = await db.prepare(`
+      SELECT 
+        r.id, 
+        r.feedback_id, 
+        r.username, 
+        r.content, 
+        r.created_at,
+        (SELECT COUNT(*) FROM reply_likes WHERE reply_id = r.id) as likes_count,
+        (SELECT COUNT(*) FROM reply_likes WHERE reply_id = r.id AND username = ?) as has_liked
+      FROM replies r 
+      WHERE r.feedback_id IN (${feedbackIds})
+      ORDER BY likes_count DESC, r.created_at ASC
+    `).bind(currentUsername).all();
 
     // 4. 将子回复嵌套拼装
     const mergedList = feedbacks.map(fb => {

@@ -403,6 +403,9 @@ function initGlobalAuth() {
       if (!res.ok) throw new Error('拉取失败');
       const list = await res.json();
       
+      // 写入全局缓存
+      window.currentFeedbacks = list;
+      
       if (list.length === 0) {
         feedbackWall.innerHTML = `<p style="color: var(--text-muted); font-size: 12px; text-align: center; margin-top: 50px;">🎉 暂无反馈，欢迎提交第一个 Bug！</p>`;
         return;
@@ -414,7 +417,7 @@ function initGlobalAuth() {
         });
 
         const imgTag = item.image_url 
-          ? `<img src="${item.image_url}" class="wall-post-img" onclick="viewLargeImage(this.src, '${escapeHtml(item.username)} 的反馈')" title="点击查看大图" alt="截图">`
+          ? `<img src="${item.image_url}" class="wall-post-img" onclick="viewLargeImage(this.src, '${escapeHtml(item.username)} 的反馈'); event.stopPropagation();" title="点击查看大图" alt="截图">`
           : '';
         
         // 管理员 或 作者本人 均可展示删除按钮
@@ -495,6 +498,26 @@ function initGlobalAuth() {
           `;
         }
 
+        // ---- 120字截断逻辑 ----
+        const MAX_LEN = 120;
+        const fullContent = item.content;
+        let contentHtml;
+        if (fullContent.length > MAX_LEN) {
+          const preview = escapeHtml(fullContent.slice(0, MAX_LEN));
+          const fullEscaped = escapeHtml(fullContent);
+          contentHtml = `
+            <p class="post-content-preview" id="preview-${item.id}" style="color: var(--text-secondary); font-size: 12px; word-break: break-all; line-height: 1.6; margin-bottom: 4px;">${preview}<span style="color:var(--text-muted);">...</span></p>
+            <p class="post-content-full" id="full-${item.id}" style="display:none; color: var(--text-secondary); font-size: 12px; word-break: break-all; line-height: 1.6; margin-bottom: 4px;">${fullEscaped}</p>
+            <button type="button" class="expand-btn" id="expand-btn-${item.id}" onclick="toggleExpand(${item.id})" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--neon-blue);padding:0;margin-bottom:6px;">📖 展开全文</button>
+          `;
+        } else {
+          contentHtml = `<p style="color: var(--text-secondary); font-size: 12px; word-break: break-all; line-height: 1.6;">${escapeHtml(fullContent)}</p>`;
+        }
+
+        // 心形点赞按钮
+        const likeCount = item.likes_count || 0;
+        const isLiked = !!item.has_liked;
+
         return `
           <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: 6px; padding: 12px; transition: var(--transition-smooth); position: relative;">
             <div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 11px;">
@@ -504,13 +527,16 @@ function initGlobalAuth() {
                 ${deleteBtn}
               </span>
             </div>
-            <p style="color: var(--text-secondary); font-size: 12px; word-break: break-all; line-height: 1.5;">${escapeHtml(item.content)}</p>
+            ${contentHtml}
             ${imgTag}
             
             <div class="post-action-bar" style="display: flex; gap: 12px; align-items: center; margin-top: 8px;">
               ${replyTriggerBtn}
-              <button type="button" class="action-text-btn like-btn ${item.has_liked ? 'liked' : ''}" onclick="toggleLikePost(${item.id})" id="like-btn-${item.id}" style="color: ${item.has_liked ? 'var(--neon-pink)' : 'var(--text-muted)'}; cursor: pointer; background: transparent; border: none; font-size: 11px;">
-                👍 赞 (<span id="like-count-${item.id}">${item.likes_count || 0}</span>)
+              <button type="button" class="heart-like-btn ${isLiked ? 'liked' : ''}" onclick="toggleLikePost(${item.id})" id="like-btn-${item.id}">
+                <svg class="heart-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                </svg>
+                <span id="like-count-${item.id}">${likeCount}</span>
               </button>
             </div>
 
@@ -524,6 +550,7 @@ function initGlobalAuth() {
           </div>
         `;
       }).join('');
+
     } catch (err) {
       console.error(err);
       if (checkSessionExpiry(err.message)) {
@@ -584,7 +611,8 @@ function initGlobalAuth() {
   }
 
   // 7.0.3 管理员删除主留言
-  async function deleteFeedback(id) {
+  async function deleteFeedback(id, event) {
+    if (event) event.stopPropagation();
     if (!confirm('⚠️ 警告：确定要彻底删除这条留言以及其下的所有子回复吗？此操作不可逆。')) return;
 
     const token = localStorage.getItem('auth_token');
@@ -1132,7 +1160,11 @@ window.viewLargeImage = viewLargeImage;
 // ==========================================
 // 10. 点赞与回复折叠核心驱动函数
 // ==========================================
-async function toggleLikePost(id) {
+// ==========================================
+// 10. 小红书式爱心点赞与高斯详情弹窗驱动函数
+// ==========================================
+async function toggleLikePost(id, event) {
+  if (event) event.stopPropagation(); // 阻止事件冒泡到卡片详情
   const token = localStorage.getItem('auth_token');
   if (!token) {
     alert('🔒 请先登录您的极客账号后再进行点赞！');
@@ -1152,40 +1184,348 @@ async function toggleLikePost(id) {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || '点赞操作失败');
 
-    // 局部响应刷新
-    const btn = document.getElementById(`like-btn-${id}`);
-    const cnt = document.getElementById(`like-count-${id}`);
-    if (btn && cnt) {
-      cnt.textContent = data.likes_count;
-      if (data.liked) {
-        btn.classList.add('liked');
-        btn.style.color = 'var(--neon-pink)';
-      } else {
-        btn.classList.remove('liked');
-        btn.style.color = 'var(--text-muted)';
-      }
+    // 局部极速更新，零闪烁！
+    const btnMain = document.getElementById(`like-btn-${id}`);
+    const countMain = document.getElementById(`like-count-${id}`);
+    const btnDetail = document.getElementById(`detail-like-btn-${id}`);
+    const countDetail = document.getElementById(`detail-like-count-${id}`);
+
+    if (btnMain && countMain) {
+      countMain.textContent = data.likes_count;
+      if (data.liked) btnMain.classList.add('liked');
+      else btnMain.classList.remove('liked');
     }
-    
-    // 重拉留言列表以动态应用点赞数权重排序
-    await loadFeedbacks();
+    if (btnDetail && countDetail) {
+      countDetail.textContent = data.likes_count;
+      if (data.liked) btnDetail.classList.add('liked');
+      else btnDetail.classList.remove('liked');
+    }
+
+    // 后台悄悄同步全局缓存
+    const fRes = await fetch('/api/feedback?t=' + Date.now());
+    if (fRes.ok) {
+      window.currentFeedbacks = await fRes.json();
+    }
   } catch (err) {
     alert(err.message);
   }
 }
 
-function toggleFoldedReplies(id, total) {
-  const wrapper = document.getElementById(`hidden-replies-${id}`);
-  const btn = document.getElementById(`btn-toggle-replies-${id}`);
-  if (!wrapper || !btn) return;
+// 二级回复点赞切换
+async function toggleLikeReply(replyId, feedbackId) {
+  const token = localStorage.getItem('auth_token');
+  if (!token) {
+    alert('🔒 请先登录您的极客账号后再进行点赞！');
+    openAuthModal();
+    return;
+  }
+  try {
+    const res = await fetch('/api/reply/like', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ reply_id: replyId })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || '点赞操作失败');
 
-  if (wrapper.style.display === 'none') {
-    wrapper.style.display = 'block';
-    btn.textContent = '收起回复';
-  } else {
-    wrapper.style.display = 'none';
-    btn.textContent = `💬 共 ${total} 条回复，点击展开全部`;
+    // 局部极速更新该回复的红心和计数
+    const btn = document.getElementById(`reply-like-btn-${replyId}`);
+    const count = document.getElementById(`reply-like-count-${replyId}`);
+    if (btn && count) {
+      count.textContent = data.likes_count;
+      if (data.liked) btn.classList.add('liked');
+      else btn.classList.remove('liked');
+    }
+
+    // 后台拉取同步并局部重排高赞评论
+    const fRes = await fetch('/api/feedback?t=' + Date.now());
+    if (fRes.ok) {
+      const list = await fRes.json();
+      window.currentFeedbacks = list;
+      const updatedFb = list.find(f => f.id === feedbackId);
+      if (updatedFb) {
+        const modalRepliesFlow = document.querySelector('.modal-replies-flow');
+        if (modalRepliesFlow) {
+          const heartSvg = `
+            <svg class="heart-svg" viewBox="0 0 24 24" width="14" height="14" style="vertical-align: middle;">
+              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+            </svg>
+          `;
+          modalRepliesFlow.innerHTML = updatedFb.replies.map(r => {
+            const replyDate = new Date(r.created_at).toLocaleString('zh-CN', {
+              month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
+            });
+            const deleteReplyBtn = (localStorage.getItem('auth_role') === 'admin' || (localStorage.getItem('auth_user') === r.username))
+              ? `<button type="button" class="action-text-btn delete-btn" onclick="deleteReply(${r.id}, ${feedbackId})" style="font-size:9px; margin-left:6px; color: #ef4444; border:none; background:transparent;">✕ 删除</button>`
+              : '';
+            const isAdminReply = (r.username === 'niu1029') ? 'admin' : '';
+            return `
+              <div class="reply-item" style="border-left: 2px solid var(--neon-pink); padding: 8px 12px; background: rgba(0,0,0,0.15); border-radius: 4px; margin-bottom: 8px;">
+                <div style="display: flex; justify-content: space-between; font-size: 10.5px; margin-bottom: 4px;">
+                  <span class="reply-user ${isAdminReply}" style="font-weight:600; color: var(--neon-blue);">${escapeHtml(r.username)} ${isAdminReply ? '(管理员)' : ''}</span>
+                  <span style="color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
+                    ${replyDate} 
+                    ${deleteReplyBtn}
+                  </span>
+                </div>
+                <p style="font-size: 11.5px; color: var(--text-secondary); margin: 4px 0; word-break: break-all;">${escapeHtml(r.content)}</p>
+                <div style="display: flex; justify-content: flex-end; gap: 10px; align-items: center;">
+                  <button type="button" class="action-text-btn" onclick="focusCommentInput('${escapeHtml(r.username)}')" style="font-size:10px; color:var(--text-muted); border:none; background:transparent; cursor:pointer;">💬 回复</button>
+                  <button type="button" class="reply-like-btn ${r.has_liked ? 'liked' : ''}" onclick="toggleLikeReply(${r.id}, ${feedbackId})" id="reply-like-btn-${r.id}">
+                    ${heartSvg}
+                    <span id="reply-like-count-${r.id}">${r.likes_count || 0}</span>
+                  </button>
+                </div>
+              </div>
+            `;
+          }).join('');
+        }
+      }
+    }
+  } catch (err) {
+    alert(err.message);
   }
 }
 
+// 展开详情弹窗
+async function openFeedbackDetail(id) {
+  const modal = document.getElementById('feedback-detail-modal');
+  if (!modal) return;
+  const fb = window.currentFeedbacks ? window.currentFeedbacks.find(f => f.id === id) : null;
+  if (!fb) return;
+
+  renderDetailModalContent(fb);
+  modal.style.display = 'flex';
+  setTimeout(() => modal.classList.add('active'), 10);
+}
+
+// 绘制详情弹窗内容
+function renderDetailModalContent(fb) {
+  const modalBody = document.getElementById('detail-modal-body');
+  if (!modalBody) return;
+
+  const dateStr = new Date(fb.created_at).toLocaleString();
+  const imgTag = fb.image_url 
+    ? `<img src="${fb.image_url}" class="wall-post-img" style="max-height: 200px; margin: 10px 0;" onclick="viewLargeImage(this.src, '${escapeHtml(fb.username)} 的反馈截图'); event.stopPropagation();" title="点击查看大图" alt="截图">`
+    : '';
+
+  const heartSvg = `
+    <svg class="heart-svg" viewBox="0 0 24 24" width="14" height="14" style="vertical-align: middle;">
+      <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+    </svg>
+  `;
+
+  // 渲染二级回复列表 (已高赞置顶)
+  let repliesListHtml = '';
+  if (fb.replies && fb.replies.length > 0) {
+    repliesListHtml = fb.replies.map(r => {
+      const replyDate = new Date(r.created_at).toLocaleString('zh-CN', {
+        month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
+      });
+      const deleteReplyBtn = (localStorage.getItem('auth_role') === 'admin' || (localStorage.getItem('auth_user') === r.username))
+        ? `<button type="button" class="action-text-btn delete-btn" onclick="deleteReply(${r.id}, ${fb.id})" style="font-size:9px; margin-left:6px; color: #ef4444; border:none; background:transparent;">✕ 删除</button>`
+        : '';
+      const isAdminReply = (r.username === 'niu1029') ? 'admin' : '';
+
+      return `
+        <div class="reply-item" style="border-left: 2px solid var(--neon-pink); padding: 8px 12px; background: rgba(0,0,0,0.15); border-radius: 4px; margin-bottom: 8px;">
+          <div style="display: flex; justify-content: space-between; font-size: 10.5px; margin-bottom: 4px;">
+            <span class="reply-user ${isAdminReply}" style="font-weight:600; color: var(--neon-blue);">${escapeHtml(r.username)} ${isAdminReply ? '(管理员)' : ''}</span>
+            <span style="color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
+              ${replyDate} 
+              ${deleteReplyBtn}
+            </span>
+          </div>
+          <p style="font-size: 11.5px; color: var(--text-secondary); margin: 4px 0; word-break: break-all;">${escapeHtml(r.content)}</p>
+          <div style="display: flex; justify-content: flex-end; gap: 10px; align-items: center;">
+            <button type="button" class="action-text-btn" onclick="focusCommentInput('${escapeHtml(r.username)}')" style="font-size:10px; color:var(--text-muted); border:none; background:transparent; cursor:pointer;">💬 回复</button>
+            <button type="button" class="reply-like-btn ${r.has_liked ? 'liked' : ''}" onclick="toggleLikeReply(${r.id}, ${fb.id})" id="reply-like-btn-${r.id}">
+              ${heartSvg}
+              <span id="reply-like-count-${r.id}">${r.likes_count || 0}</span>
+            </button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  } else {
+    repliesListHtml = `<p style="text-align: center; color: var(--text-muted); font-size: 11px; margin: 20px 0;">🎉 暂无回复，抢占沙发！</p>`;
+  }
+
+  const currentToken = localStorage.getItem('auth_token');
+  const inputAreaHtml = currentToken 
+    ? `
+      <div class="reply-input-box" style="display: flex; gap: 8px; margin-top: 14px; align-items: center;">
+        <textarea id="modal-reply-text-${fb.id}" placeholder="写下您的评论... (点击评论的'回复'可快捷@他人)" class="reply-textarea" style="flex: 1; min-height: 42px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: #fff; padding: 8px; border-radius: 6px; font-size: 12px; resize:none;"></textarea>
+        <button type="button" class="run-btn reply-send-btn" onclick="submitModalReply(${fb.id})" style="height: 42px; padding: 0 16px;">发布</button>
+      </div>
+    `
+    : `<p style="text-align: center; color: var(--text-muted); font-size: 11px; margin-top: 14px;">🔒 请先登录您的极客账号，登录后即可发表评论。</p>`;
+
+  modalBody.innerHTML = `
+    <!-- 帖子头部主帖展示 -->
+    <div style="border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 12px;">
+      <div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 11px;">
+        <strong style="color: var(--neon-blue); font-size: 13px;">${escapeHtml(fb.username)}</strong>
+        <span style="color: var(--text-muted);">${dateStr}</span>
+      </div>
+      <p style="color: var(--text-primary); font-size: 13.5px; word-break: break-all; line-height: 1.6; white-space: pre-wrap;">${escapeHtml(fb.content)}</p>
+      ${imgTag}
+      
+      <div style="display: flex; justify-content: flex-end; margin-top: 10px;">
+        <button type="button" class="heart-like-btn ${fb.has_liked ? 'liked' : ''}" onclick="toggleLikePost(${fb.id}, event)" id="detail-like-btn-${fb.id}">
+          ${heartSvg}
+          <span id="detail-like-count-${fb.id}">${fb.likes_count || 0}</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 帖子下方的回复评论列表区 -->
+    <div style="margin-top: 10px;">
+      <h4 style="color: var(--neon-cyan); font-size: 12px; margin-bottom: 10px; font-family: var(--font-display);">💬 回复评论列表</h4>
+      <div class="modal-replies-flow" style="display: flex; flex-direction: column; gap: 8px;">
+        ${repliesListHtml}
+      </div>
+    </div>
+
+    <!-- 评论发布提交区 -->
+    ${inputAreaHtml}
+  `;
+}
+
+// 聚焦输入框并自动填入回复 @
+function focusCommentInput(username) {
+  const ta = document.querySelector('.detail-modal-content .reply-textarea');
+  if (ta) {
+    ta.value = `@${username} `;
+    ta.focus();
+  }
+}
+
+// 提交详情模态评论
+async function submitModalReply(feedbackId) {
+  const token = localStorage.getItem('auth_token');
+  const textarea = document.getElementById(`modal-reply-text-${feedbackId}`);
+  if (!textarea) return;
+  const content = textarea.value.trim();
+  if (!content) {
+    alert('评论内容不能为空！');
+    return;
+  }
+  try {
+    const res = await fetch('/api/reply', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ feedback_id: feedbackId, content })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || '回复提交失败');
+
+    textarea.value = '';
+    await refreshGlobalFeedbacksAndRenderDetail(feedbackId);
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+// 刷新全局列表并重绘详情
+async function refreshGlobalFeedbacksAndRenderDetail(feedbackId) {
+  try {
+    const res = await fetch('/api/feedback?t=' + Date.now());
+    if (res.ok) {
+      const list = await res.json();
+      window.currentFeedbacks = list;
+      
+      const updatedFb = list.find(f => f.id === feedbackId);
+      if (updatedFb) {
+        renderDetailModalContent(updatedFb);
+      }
+      
+      // 同步更新主页评论计数
+      if (updatedFb) {
+        const commentCountText = document.getElementById(`main-comment-count-${feedbackId}`);
+        if (commentCountText) {
+          commentCountText.textContent = updatedFb.replies ? updatedFb.replies.length : 0;
+        }
+      }
+    }
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+// 删除回复的评论
+async function deleteReply(replyId, feedbackId) {
+  if (!confirm('确定要彻底删除这条回复评论吗？')) return;
+  const token = localStorage.getItem('auth_token');
+  try {
+    const res = await fetch(`/api/reply?id=${replyId}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || '删除失败');
+
+    await refreshGlobalFeedbacksAndRenderDetail(feedbackId);
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+// 绑定详情窗口的关闭事件 (在初始化中)
+document.addEventListener('DOMContentLoaded', () => {
+  const detailModal = document.getElementById('feedback-detail-modal');
+  const detailModalCloseBtn = document.getElementById('detail-modal-close-btn');
+  if (detailModalCloseBtn && detailModal) {
+    detailModalCloseBtn.addEventListener('click', () => {
+      detailModal.classList.remove('active');
+      setTimeout(() => detailModal.style.display = 'none', 300);
+      // 关闭时重新刷新主页列表以重新呈现高赞/最新状态
+      if (window.loadFeedbacks) window.loadFeedbacks();
+    });
+  }
+});
+
 window.toggleLikePost = toggleLikePost;
+window.toggleLikeReply = toggleLikeReply;
+window.openFeedbackDetail = openFeedbackDetail;
+window.focusCommentInput = focusCommentInput;
+window.submitModalReply = submitModalReply;
+window.deleteReply = deleteReply;
+
+// 展开/收起全文
+function toggleExpand(id) {
+  const preview = document.getElementById(`preview-${id}`);
+  const full = document.getElementById(`full-${id}`);
+  const btn = document.getElementById(`expand-btn-${id}`);
+  if (!preview || !full || !btn) return;
+  const isExpanded = full.style.display !== 'none';
+  if (isExpanded) {
+    full.style.display = 'none';
+    preview.style.display = '';
+    btn.textContent = '📖 展开全文';
+  } else {
+    preview.style.display = 'none';
+    full.style.display = '';
+    btn.textContent = '🔼 收起';
+  }
+}
+
+// 折叠/展开超出 3 条的评论列表
+function toggleFoldedReplies(feedbackId, total) {
+  const hiddenBox = document.getElementById(`hidden-replies-${feedbackId}`);
+  const btn = document.getElementById(`btn-toggle-replies-${feedbackId}`);
+  if (!hiddenBox || !btn) return;
+  const isHidden = hiddenBox.style.display === 'none';
+  hiddenBox.style.display = isHidden ? 'block' : 'none';
+  btn.textContent = isHidden ? `🔼 收起评论` : `💬 共 ${total} 条回复，点击展开全部`;
+}
+
+window.toggleExpand = toggleExpand;
 window.toggleFoldedReplies = toggleFoldedReplies;
+
