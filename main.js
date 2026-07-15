@@ -1087,8 +1087,13 @@ async function loadAnnouncementSystem() {
       </div>
     </div>
   `;
-  // 插入到首个元素（即 body 最顶端）
-  document.body.insertAdjacentHTML('afterbegin', barHTML);
+  // 插入到 <header> 之后，使 sticky 定位在文档流中自然跟随导航栏
+  const navHeader = document.querySelector('header.navbar') || document.querySelector('header');
+  if (navHeader) {
+    navHeader.insertAdjacentHTML('afterend', barHTML);
+  } else {
+    document.body.insertAdjacentHTML('afterbegin', barHTML);
+  }
 
   const annModal = document.getElementById('announcement-modal');
   const annModalBody = document.getElementById('announcement-modal-body');
@@ -1116,6 +1121,7 @@ async function loadAnnouncementSystem() {
     // 3. 展现顶部常驻公告条
     textAnnBarContent.textContent = announcement.content;
     annBar.style.display = 'block';
+    document.body.classList.add('has-announcement'); // 触发内容区向下偏移，防止被公告栏遮挡
 
     // 4. 新公告判定：如果本地未读，第一时间强弹显示
     const lastReadId = localStorage.getItem('read_announcement_id');

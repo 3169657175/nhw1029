@@ -2381,15 +2381,25 @@ body::after {
    WEB APPS: 云端系统公告组件
    ========================================================================== */
 .global-announcement-bar {
+  position: sticky;
+  top: 0; /* sticky 相对于最近的滚动容器，跟在 navbar 下方自然显示 */
+  left: 0;
+  right: 0;
   background: linear-gradient(90deg, #1e0b36, #09122c);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 10px 20px;
+  border-bottom: 1px solid rgba(0, 245, 255, 0.12);
+  padding: 9px 20px;
   width: 100%;
   box-sizing: border-box;
   text-align: center;
-  position: relative;
-  z-index: 998;
+  z-index: 999; /* 低于 modal(9999) 但高于页面内容，与 navbar(1000) 同级 */
+  box-shadow: 0 2px 12px rgba(0,0,0,0.4);
 }
+/* 当公告栏显示时，无需额外偏移（sticky 布局已自然处理） */
+body.has-announcement .container,
+body.has-announcement main {
+  padding-top: 0;
+}
+
 .announcement-bar-content {
   display: flex;
   align-items: center;
