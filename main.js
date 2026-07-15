@@ -426,33 +426,71 @@ function initGlobalAuth() {
           ? `<button type="button" class="action-text-btn reply-btn" onclick="toggleReplyBox(${item.id})">💬 回复</button>`
           : '';
 
-        // 嵌套子回复渲染
+        // 嵌套子回复渲染 (大于 3 条进行物理折叠)
         let repliesHtml = '';
         if (item.replies && item.replies.length > 0) {
+          const total = item.replies.length;
+          const showCount = 3;
+          
+          const visibleReplies = item.replies.slice(0, showCount);
+          const hiddenReplies = item.replies.slice(showCount);
+
+          const visibleHtml = visibleReplies.map(reply => {
+            const replyDate = new Date(reply.created_at).toLocaleString('zh-CN', {
+              month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
+            });
+            const deleteReplyBtn = (currentRole === 'admin' || (currentUser && currentUser === reply.username))
+              ? `<button type="button" class="action-text-btn delete-btn" onclick="deleteReply(${reply.id})" style="font-size:9px; margin-left:6px;">✕</button>`
+              : '';
+            const isAdminReply = (reply.username === 'niu1029') ? 'admin' : '';
+            return `
+              <div class="reply-item">
+                <div class="reply-meta">
+                  <span class="reply-user ${isAdminReply}">${escapeHtml(reply.username)} ${isAdminReply ? '(管理员)' : ''}</span>
+                  <span class="reply-time">${replyDate} ${deleteReplyBtn}</span>
+                </div>
+                <p class="reply-text">${escapeHtml(reply.content)}</p>
+              </div>
+            `;
+          }).join('');
+
+          let foldHtml = '';
+          if (total > showCount) {
+            const hiddenHtml = hiddenReplies.map(reply => {
+              const replyDate = new Date(reply.created_at).toLocaleString('zh-CN', {
+                month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
+              });
+              const deleteReplyBtn = (currentRole === 'admin' || (currentUser && currentUser === reply.username))
+                ? `<button type="button" class="action-text-btn delete-btn" onclick="deleteReply(${reply.id})" style="font-size:9px; margin-left:6px;">✕</button>`
+                : '';
+              const isAdminReply = (reply.username === 'niu1029') ? 'admin' : '';
+              return `
+                <div class="reply-item">
+                  <div class="reply-meta">
+                    <span class="reply-user ${isAdminReply}">${escapeHtml(reply.username)} ${isAdminReply ? '(管理员)' : ''}</span>
+                    <span class="reply-time">${replyDate} ${deleteReplyBtn}</span>
+                  </div>
+                  <p class="reply-text">${escapeHtml(reply.content)}</p>
+                </div>
+              `;
+            }).join('');
+
+            foldHtml = `
+              <div id="hidden-replies-${item.id}" style="display: none; border-top: 1px dashed rgba(255,255,255,0.03); margin-top: 8px; padding-top: 8px;">
+                ${hiddenHtml}
+              </div>
+              <div style="margin-top: 8px; text-align: center;">
+                <button type="button" class="run-btn" id="btn-toggle-replies-${item.id}" onclick="toggleFoldedReplies(${item.id}, ${total})" style="padding: 2px 8px; font-size: 10px; background: rgba(255,255,255,0.02); color: var(--neon-blue); border: 1px solid rgba(0, 245, 255, 0.15); border-radius: 4px; cursor: pointer;">
+                  💬 共 ${total} 条回复，点击展开全部
+                </button>
+              </div>
+            `;
+          }
+
           repliesHtml = `
             <div class="replies-container">
-              ${item.replies.map(reply => {
-                const replyDate = new Date(reply.created_at).toLocaleString('zh-CN', {
-                  month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
-                });
-                
-                // 子回复的自助删除展示判断
-                const deleteReplyBtn = (currentRole === 'admin' || (currentUser && currentUser === reply.username))
-                  ? `<button type="button" class="action-text-btn delete-btn" onclick="deleteReply(${reply.id})" style="font-size:9px; margin-left:6px;">✕</button>`
-                  : '';
-
-                const isAdminReply = (reply.username === 'niu1029') ? 'admin' : '';
-
-                return `
-                  <div class="reply-item">
-                    <div class="reply-meta">
-                      <span class="reply-user ${isAdminReply}">${escapeHtml(reply.username)} ${isAdminReply ? '(管理员)' : ''}</span>
-                      <span class="reply-time">${replyDate} ${deleteReplyBtn}</span>
-                    </div>
-                    <p class="reply-text">${escapeHtml(reply.content)}</p>
-                  </div>
-                `;
-              }).join('')}
+              ${visibleHtml}
+              ${foldHtml}
             </div>
           `;
         }
@@ -469,8 +507,11 @@ function initGlobalAuth() {
             <p style="color: var(--text-secondary); font-size: 12px; word-break: break-all; line-height: 1.5;">${escapeHtml(item.content)}</p>
             ${imgTag}
             
-            <div class="post-action-bar">
+            <div class="post-action-bar" style="display: flex; gap: 12px; align-items: center; margin-top: 8px;">
               ${replyTriggerBtn}
+              <button type="button" class="action-text-btn like-btn ${item.has_liked ? 'liked' : ''}" onclick="toggleLikePost(${item.id})" id="like-btn-${item.id}" style="color: ${item.has_liked ? 'var(--neon-pink)' : 'var(--text-muted)'}; cursor: pointer; background: transparent; border: none; font-size: 11px;">
+                👍 赞 (<span id="like-count-${item.id}">${item.likes_count || 0}</span>)
+              </button>
             </div>
 
             <!-- 二级回复框 -->
@@ -1088,3 +1129,63 @@ function escapeHtml(str) {
 
 window.viewLargeImage = viewLargeImage;
 
+// ==========================================
+// 10. 点赞与回复折叠核心驱动函数
+// ==========================================
+async function toggleLikePost(id) {
+  const token = localStorage.getItem('auth_token');
+  if (!token) {
+    alert('🔒 请先登录您的极客账号后再进行点赞！');
+    openAuthModal();
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/feedback/like', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ feedback_id: id })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || '点赞操作失败');
+
+    // 局部响应刷新
+    const btn = document.getElementById(`like-btn-${id}`);
+    const cnt = document.getElementById(`like-count-${id}`);
+    if (btn && cnt) {
+      cnt.textContent = data.likes_count;
+      if (data.liked) {
+        btn.classList.add('liked');
+        btn.style.color = 'var(--neon-pink)';
+      } else {
+        btn.classList.remove('liked');
+        btn.style.color = 'var(--text-muted)';
+      }
+    }
+    
+    // 重拉留言列表以动态应用点赞数权重排序
+    await loadFeedbacks();
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+function toggleFoldedReplies(id, total) {
+  const wrapper = document.getElementById(`hidden-replies-${id}`);
+  const btn = document.getElementById(`btn-toggle-replies-${id}`);
+  if (!wrapper || !btn) return;
+
+  if (wrapper.style.display === 'none') {
+    wrapper.style.display = 'block';
+    btn.textContent = '收起回复';
+  } else {
+    wrapper.style.display = 'none';
+    btn.textContent = `💬 共 ${total} 条回复，点击展开全部`;
+  }
+}
+
+window.toggleLikePost = toggleLikePost;
+window.toggleFoldedReplies = toggleFoldedReplies;
