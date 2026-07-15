@@ -982,6 +982,109 @@ document.addEventListener('DOMContentLoaded', () => {
       closeLightbox();
     }
   });
+
+  // 载入云端最新公告系统
+  loadAnnouncementSystem();
 });
 
+// ==========================================
+// 9. 云端最新置顶公告机制 (大厂风度)
+// ==========================================
+async function loadAnnouncementSystem() {
+  // 1. 动态生成并向 body 底部追加公告模态框及顶部常驻条 DOM，无侵入性
+  const modalHTML = `
+    <div class="modal-overlay" id="announcement-modal" style="display: none; z-index: 10005;">
+      <div class="modal-content" style="width: 480px;">
+        <div class="modal-header">
+          <div class="modal-logo">
+            <span class="pulse-dot"></span>
+            <span class="logo-text">📣 最新官方公告</span>
+          </div>
+          <button class="modal-close-btn" id="btn-close-announcement-modal">✕</button>
+        </div>
+        <div class="modal-body" id="announcement-modal-body" style="font-size: 13.5px; line-height: 1.6; color: rgba(255,255,255,0.85); white-space: pre-wrap;">
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+  const barHTML = `
+    <div class="global-announcement-bar" id="global-announcement-bar" style="display: none;">
+      <div class="announcement-bar-content">
+        <span class="announcement-bell">📢</span>
+        <span class="announcement-text" id="text-announcement-bar-content">最新公告加载中...</span>
+        <button class="announcement-view-link" id="btn-reopen-announcement">点击查看详情 &rarr;</button>
+      </div>
+    </div>
+  `;
+  // 插入到首个元素（即 body 最顶端）
+  document.body.insertAdjacentHTML('afterbegin', barHTML);
+
+  const annModal = document.getElementById('announcement-modal');
+  const annModalBody = document.getElementById('announcement-modal-body');
+  const btnCloseAnnModal = document.getElementById('btn-close-announcement-modal');
+  const annBar = document.getElementById('global-announcement-bar');
+  const textAnnBarContent = document.getElementById('text-announcement-bar-content');
+  const btnReopenAnn = document.getElementById('btn-reopen-announcement');
+
+  if (!annModal || !annModalBody || !annBar) return;
+
+  try {
+    const res = await fetch('/api/announcement');
+    if (!res.ok) return;
+
+    const announcement = await res.json();
+    if (!announcement) return; // 云端无公告
+
+    // 2. 渲染公告详情内容
+    let bodyHtml = `<div>${escapeHtml(announcement.content)}</div>`;
+    if (announcement.image_url && announcement.image_url.trim()) {
+      bodyHtml += `<img src="${announcement.image_url.trim()}" class="announcement-img-preview" alt="公告配图" style="cursor: zoom-in;" onclick="window.viewLargeImage('${announcement.image_url.trim()}', '公告配图')">`;
+    }
+    annModalBody.innerHTML = bodyHtml;
+
+    // 3. 展现顶部常驻公告条
+    textAnnBarContent.textContent = announcement.content;
+    annBar.style.display = 'block';
+
+    // 4. 新公告判定：如果本地未读，第一时间强弹显示
+    const lastReadId = localStorage.getItem('read_announcement_id');
+    if (!lastReadId || parseInt(lastReadId) < announcement.id) {
+      annModal.style.display = 'flex';
+    }
+
+    // 5. 事件绑定
+    const closeAnn = () => {
+      annModal.style.display = 'none';
+      localStorage.setItem('read_announcement_id', announcement.id.toString());
+    };
+
+    if (btnCloseAnnModal) btnCloseAnnModal.addEventListener('click', closeAnn);
+    annModal.addEventListener('click', (e) => {
+      if (e.target === annModal) closeAnn();
+    });
+
+    if (btnReopenAnn) {
+      btnReopenAnn.addEventListener('click', () => {
+        annModal.style.display = 'flex';
+      });
+    }
+
+  } catch (e) {
+    console.error('公告系统载入失败:', e.message);
+  }
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 window.viewLargeImage = viewLargeImage;
+

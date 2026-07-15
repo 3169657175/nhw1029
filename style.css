@@ -2377,5 +2377,58 @@ body::after {
   box-shadow: 0 10px 30px rgba(59, 130, 246, 0.04);
   background: rgba(255, 255, 255, 0.03) !important;
 }
-/ /   c a c h e - b u s t e r :   2 0 2 6 - 0 7 - 1 0 T 1 7 : 5 1  
- 
+/* ==========================================================================
+   WEB APPS: 云端系统公告组件
+   ========================================================================== */
+.global-announcement-bar {
+  background: linear-gradient(90deg, #1e0b36, #09122c);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 10px 20px;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: center;
+  position: relative;
+  z-index: 998;
+}
+.announcement-bar-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  font-family: var(--font-display);
+  font-size: 13px;
+  flex-wrap: wrap;
+}
+.announcement-text {
+  color: rgba(255, 255, 255, 0.9);
+  max-width: 700px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.announcement-view-link {
+  background: transparent;
+  border: 1px solid rgba(0, 245, 255, 0.3);
+  color: var(--neon-cyan);
+  padding: 3px 10px;
+  font-size: 11px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.announcement-view-link:hover {
+  background: rgba(0, 245, 255, 0.1);
+  color: #fff;
+  border-color: #fff;
+}
+
+/* 公告内图片渲染 */
+.announcement-img-preview {
+  margin-top: 14px;
+  border-radius: 6px;
+  max-width: 100%;
+  max-height: 280px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  object-fit: contain;
+  display: block;
+}
