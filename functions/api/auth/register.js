@@ -1,55 +1,24 @@
 import { hashPassword } from "./_utils.js";
 
-export async function onRequestPost(context) {
-  const { request, env } = context;
-  const db = env.DB || env.db;
+const json = (body, status = 200) => new Response(JSON.stringify(body), {
+  status,
+  headers: { "Content-Type": "application/json" }
+});
 
-  if (!db) {
-    return new Response(JSON.stringify({ error: "未绑定 D1 数据库" }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" }
-    });
-  }
+export async function onRequestPost({ request, env }) {
+  const db = env.DB || env.db;
+  if (!db) return json({ error: "未绑定 D1 数据库" }, 500);
 
   try {
-    const { username, password } = await request.json();
-
-    // 格式校验
-    if (!username || !password || !username.trim() || !password.trim()) {
-      return new Response(JSON.stringify({ error: "账号和密码不能为空" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" }
-      });
+    const body = await request.json();
+    const username = typeof body.username === "string" ? body.username.trim() : "";
+    const password = typeof body.password === "string" ? body.password.trim() : "";
+    if (!username || !password) return json({ error: "账号和密码不能为空" }, 400);
+    if (username.length < 3 || username.length > 20) {
+      return json({ error: "账号长度必须在 3 到 20 个字符之间" }, 400);
     }
+    if (password.length < 6) return json({ error: "密码长度不能少于 6 位" }, 400);
 
-    const cleanUsername = username.trim();
-    const cleanPassword = password.trim();
-
-    if (cleanUsername.length < 3 || cleanUsername.length > 20) {
-      return new Response(JSON.stringify({ error: "账号长度必须在 3 ~ 20 字之间" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" }
-      });
-    }
-    
-    if (cleanPassword.length < 6) {
-      return new Response(JSON.stringify({ error: "密码长度不能少于 6 位" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" }
-      });
-    }
-
-    // 防冒充与抢注管理员校验
-    if (cleanUsername === "niu1029" && cleanPassword !== "123456") {
-      return new Response(JSON.stringify({ error: "管理员账号 niu1029 的密码不匹配，无法注册。" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" }
-      });
-    }
-
-    // ==========================================
-    // D1 数据库自愈机制：自动建立 users 用户表
-    // ==========================================
     await db.prepare(`
       CREATE TABLE IF NOT EXISTS users (
         username TEXT PRIMARY KEY,
@@ -59,32 +28,17 @@ export async function onRequestPost(context) {
       )
     `).run();
 
-    // 检查是否重名
-    const existingUser = await db.prepare("SELECT username FROM users WHERE username = ?").bind(cleanUsername).first();
-    if (existingUser) {
-      return new Response(JSON.stringify({ error: "该账号已被注册，请尝试直接登录" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" }
-      });
-    }
+    const existing = await db.prepare("SELECT username FROM users WHERE username = ?")
+      .bind(username)
+      .first();
+    if (existing) return json({ error: "该账号已被注册，请直接登录" }, 400);
 
-    // 计算哈希密码
-    const passHash = await hashPassword(cleanPassword);
-    const role = (cleanUsername === "niu1029") ? "admin" : "user";
-
-    // 写入数据库
-    await db.prepare("INSERT INTO users (username, password_hash, role, created_at) VALUES (?, ?, ?, ?)")
-      .bind(cleanUsername, passHash, role, Date.now())
-      .run();
-
-    return new Response(JSON.stringify({ success: true }), {
-      headers: { "Content-Type": "application/json" }
-    });
-
-  } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" }
-    });
+    const passwordHash = await hashPassword(password);
+    await db.prepare(
+      "INSERT INTO users (username, password_hash, role, created_at) VALUES (?, ?, 'user', ?)"
+    ).bind(username, passwordHash, Date.now()).run();
+    return json({ success: true });
+  } catch (error) {
+    return json({ error: error.message }, 500);
   }
 }

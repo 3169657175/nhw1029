@@ -1,32 +1,21 @@
-import { hashPassword, generateJWT } from "./_utils.js";
+import { generateJWT, getJwtSecret, hashPassword, verifyPassword } from "./_utils.js";
 
-export async function onRequestPost(context) {
-  const { request, env } = context;
+const json = (body, status = 200) => new Response(JSON.stringify(body), {
+  status,
+  headers: { "Content-Type": "application/json" }
+});
+
+export async function onRequestPost({ request, env }) {
   const db = env.DB || env.db;
-
-  if (!db) {
-    return new Response(JSON.stringify({ error: "未绑定 D1 数据库" }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" }
-    });
-  }
+  if (!db) return json({ error: "未绑定 D1 数据库" }, 500);
 
   try {
-    const { username, password } = await request.json();
+    const jwtSecret = getJwtSecret(env);
+    const body = await request.json();
+    const username = typeof body.username === "string" ? body.username.trim() : "";
+    const password = typeof body.password === "string" ? body.password.trim() : "";
+    if (!username || !password) return json({ error: "账号和密码不能为空" }, 400);
 
-    if (!username || !password || !username.trim() || !password.trim()) {
-      return new Response(JSON.stringify({ error: "账号和密码不能为空" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" }
-      });
-    }
-
-    const cleanUsername = username.trim();
-    const cleanPassword = password.trim();
-
-    // ==========================================
-    // 数据库自愈建用户表
-    // ==========================================
     await db.prepare(`
       CREATE TABLE IF NOT EXISTS users (
         username TEXT PRIMARY KEY,
@@ -36,60 +25,27 @@ export async function onRequestPost(context) {
       )
     `).run();
 
-    // ==========================================
-    // 特殊自愈：如果管理员 niu1029 登录且密码正确，但表中没有该用户，自动帮其注册
-    // ==========================================
-    if (cleanUsername === "niu1029" && cleanPassword === "123456") {
-      const adminExists = await db.prepare("SELECT username FROM users WHERE username = 'niu1029'").first();
-      if (!adminExists) {
-        const passHash = await hashPassword("123456");
-        await db.prepare("INSERT INTO users (username, password_hash, role, created_at) VALUES ('niu1029', ?, 'admin', ?)")
-          .bind(passHash, Date.now())
-          .run();
-        console.log("D1 Auto-heal: administrator niu1029 auto-registered successfully.");
-      }
+    const user = await db.prepare(
+      "SELECT username, password_hash, role FROM users WHERE username = ?"
+    ).bind(username).first();
+    if (!user) return json({ error: "账号或密码错误" }, 400);
+
+    const passwordCheck = await verifyPassword(password, user.password_hash);
+    if (!passwordCheck.valid) return json({ error: "账号或密码错误" }, 400);
+
+    if (passwordCheck.needsRehash) {
+      const upgradedHash = await hashPassword(password);
+      await db.prepare("UPDATE users SET password_hash = ? WHERE username = ?")
+        .bind(upgradedHash, user.username)
+        .run();
     }
 
-    // 查询用户
-    const user = await db.prepare("SELECT username, password_hash, role FROM users WHERE username = ?")
-      .bind(cleanUsername)
-      .first();
-
-    if (!user) {
-      return new Response(JSON.stringify({ error: "账号或密码错误" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" }
-      });
-    }
-
-    // 验证密码哈希
-    const inputHash = await hashPassword(cleanPassword);
-    if (inputHash !== user.password_hash) {
-      return new Response(JSON.stringify({ error: "账号或密码错误" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" }
-      });
-    }
-
-    // 登录成功，生成下发 JWT 令牌
     const token = await generateJWT({
       username: user.username,
       role: user.role
-    });
-
-    return new Response(JSON.stringify({
-      success: true,
-      token,
-      username: user.username,
-      role: user.role
-    }), {
-      headers: { "Content-Type": "application/json" }
-    });
-
-  } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" }
-    });
+    }, jwtSecret);
+    return json({ success: true, token, username: user.username, role: user.role });
+  } catch (error) {
+    return json({ error: error.message }, 500);
   }
 }
