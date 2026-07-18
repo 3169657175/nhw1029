@@ -1,4 +1,4 @@
-import { authenticateRequest } from "./auth/_utils.js";
+import { authenticateRequest, getJwtSecret } from "./auth/_utils.js";
 
 // ==========================================
 // 1. POST /api/reply (发表留言回复)
@@ -15,7 +15,7 @@ export async function onRequestPost(context) {
   }
 
   // 1. 登录会话校验
-  const user = await authenticateRequest(request);
+  const user = await authenticateRequest(request, getJwtSecret(env));
   if (!user) {
     return new Response(JSON.stringify({ error: "登录会话已过期，请重新登录账号后再进行回复" }), {
       status: 401,
@@ -76,7 +76,7 @@ export async function onRequestDelete(context) {
   }
 
   // 1. 登录会话身份鉴权
-  const user = await authenticateRequest(request);
+  const user = await authenticateRequest(request, getJwtSecret(env));
   if (!user) {
     return new Response(JSON.stringify({ error: "登录会话已失效，请重新登录" }), {
       status: 401,

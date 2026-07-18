@@ -1,4 +1,4 @@
-import { authenticateRequest } from "./auth/_utils.js";
+import { authenticateRequest, getJwtSecret } from "./auth/_utils.js";
 
 // ==========================================
 // 1. GET /api/feedback (联表读取留言及全部子回复)
@@ -17,7 +17,7 @@ export async function onRequestGet(context) {
   // 解密获取当前的登录用户用户名 (如果没登录则留空)
   let currentUsername = "";
   try {
-    const user = await authenticateRequest(request);
+    const user = await authenticateRequest(request, getJwtSecret(env));
     if (user) {
       currentUsername = user.username;
     }
@@ -142,7 +142,7 @@ export async function onRequestPost(context) {
   }
 
   // 身份鉴权验证 JWT
-  const user = await authenticateRequest(request);
+  const user = await authenticateRequest(request, getJwtSecret(env));
   if (!user) {
     return new Response(JSON.stringify({ error: "登录会话已过期，请重新登录账号后再发帖" }), {
       status: 401,
@@ -197,7 +197,7 @@ export async function onRequestDelete(context) {
   }
 
   // 1. 登录会话身份鉴权
-  const user = await authenticateRequest(request);
+  const user = await authenticateRequest(request, getJwtSecret(env));
   if (!user) {
     return new Response(JSON.stringify({ error: "登录会话已失效，请重新登录" }), {
       status: 401,

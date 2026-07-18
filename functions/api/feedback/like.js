@@ -1,4 +1,4 @@
-import { authenticateRequest } from "../auth/_utils.js";
+import { authenticateRequest, getJwtSecret } from "../auth/_utils.js";
 
 // ==========================================
 // POST /api/feedback/like (主留言双向点赞切换，限登录用户)
@@ -15,7 +15,7 @@ export async function onRequestPost(context) {
   }
 
   // 1. 鉴权，只有登录的极客才能点赞
-  const user = await authenticateRequest(request);
+  const user = await authenticateRequest(request, getJwtSecret(env));
   if (!user) {
     return new Response(JSON.stringify({ error: "🔒 请先登录您的极客账号后再进行点赞操作！" }), {
       status: 401,

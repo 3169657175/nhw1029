@@ -1,4 +1,4 @@
-import { authenticateRequest } from "./auth/_utils.js";
+import { authenticateRequest, getJwtSecret } from "./auth/_utils.js";
 
 // ==========================================
 // 1. GET /api/announcement (获取公告，支持 ?all=true 获取历史全部)
@@ -76,7 +76,7 @@ export async function onRequestPost(context) {
   }
 
   // 1. 登录会话与管理员身份鉴权
-  const user = await authenticateRequest(request);
+  const user = await authenticateRequest(request, getJwtSecret(env));
   if (!user || user.role !== "admin") {
     return new Response(JSON.stringify({ error: "操作被拒绝：您无权发布或修改公告。" }), {
       status: 403,
@@ -135,7 +135,7 @@ export async function onRequestDelete(context) {
   }
 
   // 1. 登录会话与管理员身份鉴权
-  const user = await authenticateRequest(request);
+  const user = await authenticateRequest(request, getJwtSecret(env));
   if (!user || user.role !== "admin") {
     return new Response(JSON.stringify({ error: "操作被拒绝：您无权删除公告。" }), {
       status: 403,
